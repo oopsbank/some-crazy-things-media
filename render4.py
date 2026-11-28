@@ -1,6 +1,6 @@
 import math, random, subprocess, sys, json
 from PIL import Image, ImageDraw, ImageFont
-from sim4 import simulate, AX0,AY0,AX1,AY1,R,CD,KR_WARN,KR_R,CRUSH_R
+from sim4 import simulate, AX0,AY0,AX1,AY1,R,CD,KR_WARN,KR_R,CRUSH_R,BURROW_R,MINE_ARM
 SEED=int(sys.argv[1]); OUT=sys.argv[2]
 r=simulate(SEED, record=True); F=r['frames']
 W,H=1080,1920
@@ -20,11 +20,14 @@ def emo(side,size):
     return EC[(side,size)]
 OC=(245,120,210); CC=(255,125,70)
 INK=(120,70,210); WH=(225,95,185); KR=(200,60,160); BUB=(130,215,255); GOLD=(255,195,60); RED=(255,70,70)
-NAMES={'ink':'INK!','whip':'TENTACLE WHIP!','kraken':'KRAKEN!','bubbles':'BUBBLES!','claw':'CLAW DASH!','crush':'CRAB CRUSH!'}
-SKCOL={'ink':INK,'whip':WH,'kraken':KR,'bubbles':BUB,'claw':CC,'crush':GOLD}
-A_SK=('ink','whip','kraken'); B_SK=('bubbles','claw','crush')
+MN=(170,100,255); TEAL=(110,255,210); PRL=(255,235,225); SAND=(215,170,100)
+NAMES={'ink':'INK!','mine':'INK MINE!','blink':'CAMO BLINK!','whip':'TENTACLE WHIP!','kraken':'KRAKEN!',
+       'bubbles':'BUBBLES!','pearl':'PEARL!','burrow':'BURROW!','boomer':'CLAW BOOMERANG!','crush':'CRAB CRUSH!'}
+SKCOL={'ink':INK,'mine':MN,'blink':TEAL,'whip':WH,'kraken':KR,'bubbles':BUB,'pearl':PRL,'burrow':SAND,'boomer':CC,'crush':GOLD}
+A_MOVES=('ink','mine','blink','whip','kraken')
+A_SK=('s1a','whip','kraken'); B_SK=('s1b','boomer','crush')
 INTRO=30; END=70
-pops=[]; flashes=[]; parts=[]; ghosts=[]; blasts=[]; pinches=[]; whips=[]; tents=[]
+pops=[]; flashes=[]; parts=[]; ghosts=[]; blasts=[]; pinches=[]; whips=[]; tents=[]; afters=[]; inkbooms=[]; dirt=[]
 proc=subprocess.Popen(['ffmpeg','-y','-loglevel','error','-f','rawvideo','-pix_fmt','rgb24','-s',f'{W}x{H}','-r','30','-i','-','-c:v','libx264','-pix_fmt','yuv420p','-crf','18',OUT],stdin=subprocess.PIPE)
 def ctext(d,cx,y,t,fn,fill,**kw):
     w=d.textlength(t,font=fn); d.text((cx-w/2,y),t,font=fn,fill=fill,**kw)
@@ -67,17 +70,20 @@ for t in range(total):
     hb=260*math.sin(math.pi*jmp[0]) if jmp and not ending else 0   # crab height in the air
     if live:
         for c in fr['casts']:
-            fx,fy=(ax,ay) if c in A_SK else (bx,by-hb)
+            fx,fy=(ax,ay) if c in A_MOVES else (bx,by-hb)
             flashes.append([c,fx,fy,SKCOL[c],0])
             if c in ULTS: shake[0]=max(shake[0],26); flash[:]=[170,(255,255,255)]
         if fr['whip']: whips.append(list(fr['whip'])+[0,random.uniform(0,6.28)])
         for (tg,dm,k) in fr['hits']:
             px,py=(ax,ay) if tg=='a' else (bx,by)
-            col={'ink':INK,'whip':WH,'kraken':KR,'bubble':BUB,'claw':CC,'crush':GOLD,'bump':(255,255,255)}[k]
+            col={'ink':INK,'mine':MN,'blink':TEAL,'whip':WH,'kraken':KR,'bubble':BUB,'pearl':PRL,'burrow':SAND,'boomer':CC,'crush':GOLD,'bump':(255,255,255)}[k]
+            if k=='blink': shake[0]=max(shake[0],9); burst(px,py,18,[TEAL,(255,255,255)],5,13)
+            if k=='pearl': shake[0]=max(shake[0],7); burst(px,py,14,[PRL,(255,200,220)],4,12)
+            if k=='boomer': pinches.append([px,py,0]); burst(px,py,10,[CC,(255,255,255)],4,11)
+            if k=='burrow': flash[:]=[60,SAND]
             if k=='ink': burst(px,py,10,[INK,(60,30,110)],3,9)
             if k=='bubble': burst(px,py,8,[BUB,(255,255,255)],3,8)
             if k=='whip': shake[0]=max(shake[0],9); burst(px,py,14,[WH,(255,255,255)],5,13)
-            if k=='claw': shake[0]=max(shake[0],10); pinches.append([px,py,0]); burst(px,py,16,[CC,(255,255,255)],5,14)
             if k=='kraken': flash[:]=[70,KR]; burst(px,py,30,[KR,WH,(255,255,255)],5,18)
             if k=='crush': flash[:]=[110,GOLD]
             pops.append([px+random.uniform(-30,30),py-70,f'-{dm}',col,0,72 if k in ULTS or k=='crush' else 52])
@@ -86,7 +92,13 @@ for t in range(total):
         if fr['landed']:
             lx,ly=fr['landed']; blasts.append([lx,ly,0]); shake[0]=max(shake[0],28)
             burst(lx,ly,60,[GOLD,CC,(255,255,255),(140,100,60)],5,24,(6,12))
-        if fr['claw']: ghosts.append([bx,by,0])
+        if fr['blink']:
+            ox,oy,nx_,ny_=fr['blink']; afters.append([ox,oy,nx_,ny_,0]); burst(ox,oy,16,[TEAL,(200,255,240)],3,9); burst(nx_,ny_,16,[TEAL,(255,255,255)],3,9)
+        for (mx,my) in fr['minebooms']:
+            inkbooms.append([mx,my,0]); shake[0]=max(shake[0],12); burst(mx,my,30,[INK,MN,(40,20,70)],5,18)
+        if fr['popup']:
+            px,py=fr['popup']; dirt.append([px,py,0]); shake[0]=max(shake[0],14); burst(px,py,40,[SAND,(150,110,60),(255,230,170)],5,20)
+        if fr['burrow'] and t%2==0: burst(bx+random.uniform(-30,30),by+random.uniform(-20,20),2,[SAND,(150,110,60)],2,5,(4,7))
     lay=Image.new('RGBA',(W,H),(0,0,0,0)); ld=ImageDraw.Draw(lay)
     if not ending:
         # kraken warnings
@@ -125,7 +137,34 @@ for t in range(total):
     tents[:]=[tn for tn in tents if tn[2]<16]
     for g in ghosts:
         g[2]+=1; a=max(0,140-g[2]*14)
-        if a>0: ld.ellipse([g[0]-R,g[1]-R,g[0]+R,g[1]+R],outline=CC+(a,),width=4)
+        if a>0:
+            rr=26 if len(g)>3 else R
+            ld.ellipse([g[0]-rr,g[1]-rr,g[0]+rr,g[1]+rr],outline=CC+(a,),width=4)
+    for e in afters:   # blink afterimage + dotted trail
+        e[4]+=1; k=e[4]; al=max(0,200-k*18)
+        if al>0:
+            ov,od=overlay(); od.ellipse([e[0]-R,e[1]-R,e[0]+R,e[1]+R],fill=TEAL+(al//3,),outline=TEAL+(al,),width=4)
+            for q in range(12):
+                u=q/11; od.ellipse([e[0]+(e[2]-e[0])*u-5,e[1]+(e[3]-e[1])*u-5,e[0]+(e[2]-e[0])*u+5,e[1]+(e[3]-e[1])*u+5],fill=TEAL+(al,))
+            g2=emo('a',86).copy(); g2.putalpha(g2.getchannel('A').point(lambda v:v*al//400)); ov.alpha_composite(g2,(int(e[0]-43),int(e[1]-43)))
+            lay.alpha_composite(ov)
+    afters[:]=[e for e in afters if e[4]<12]
+    for e in inkbooms:
+        e[2]+=1; k=e[2]; rr=40+k*14; al=max(0,230-k*16)
+        if al>0:
+            ov,od=overlay(); od.ellipse([e[0]-rr,e[1]-rr,e[0]+rr,e[1]+rr],fill=(50,25,90,al//2),outline=MN+(al,),width=10)
+            for q in range(7):
+                g=q/7*6.28+e[0]; L=rr*1.1; od.ellipse([e[0]+math.cos(g)*L-12,e[1]+math.sin(g)*L-12,e[0]+math.cos(g)*L+12,e[1]+math.sin(g)*L+12],fill=INK+(al,))
+            lay.alpha_composite(ov)
+    inkbooms[:]=[e for e in inkbooms if e[2]<16]
+    for e in dirt:
+        e[2]+=1; k=e[2]; rr=BURROW_R*min(1,k/4); al=max(0,220-k*12)
+        if al>0:
+            ov,od=overlay(); od.ellipse([e[0]-rr,e[1]-rr,e[0]+rr,e[1]+rr],fill=SAND+(al//3,),outline=SAND+(al,),width=12)
+            for q in range(9):
+                g=q/9*6.28+e[1]; od.polygon([(e[0]+math.cos(g-.15)*30,e[1]+math.sin(g-.15)*30),(e[0]+math.cos(g)*rr,e[1]+math.sin(g)*rr),(e[0]+math.cos(g+.15)*30,e[1]+math.sin(g+.15)*30)],fill=(150,110,60,al))
+            lay.alpha_composite(ov)
+    dirt[:]=[e for e in dirt if e[2]<20]
     ghosts[:]=[g for g in ghosts if g[2]<10]
     if not ending:
         for (px,py,a) in fr['inks']:
@@ -135,6 +174,29 @@ for t in range(total):
                 od.ellipse([tx-rq,ty-rq,tx+rq,ty+rq],fill=INK+(220-q*35,))
             od.ellipse([px-17,py-17,px+17,py+17],fill=(70,35,130,255),outline=INK+(255,),width=4)
             od.ellipse([px-7,py-10,px,py-3],fill=(200,170,255,255)); lay.alpha_composite(ov)
+        for (mx,my,mt) in fr['mines']:
+            armed=mt>MINE_ARM; ov,od=overlay()
+            for q in range(8):
+                g=q/8*6.28+mt*0.03; od.line([mx+math.cos(g)*16,my+math.sin(g)*16,mx+math.cos(g)*30,my+math.sin(g)*30],fill=MN+(255,),width=6)
+            od.ellipse([mx-22,my-22,mx+22,my+22],fill=(60,30,110,255),outline=MN+(255,),width=4)
+            lc=(255,60,60) if armed and (t//5)%2 else (120,60,60); od.ellipse([mx-7,my-7,mx+7,my+7],fill=lc+(255,))
+            if armed: od.ellipse([mx-40,my-40,mx+40,my+40],outline=MN+(70,),width=3)
+            lay.alpha_composite(ov)
+        for (px,py,vx,vy) in fr['pearls']:
+            m=math.hypot(vx,vy) or 1; ov,od=overlay()
+            for q in range(6):
+                tx,ty=px-vx/m*q*11,py-vy/m*q*11; rq=15-q*2
+                od.ellipse([tx-rq,ty-rq,tx+rq,ty+rq],fill=(255,210,230,170-q*28))
+            od.ellipse([px-17,py-17,px+17,py+17],fill=PRL+(255,),outline=(255,190,215,255),width=3)
+            od.ellipse([px-9,py-11,px-1,py-3],fill=(255,255,255,255)); lay.alpha_composite(ov)
+        for (px,py,rot,back) in fr['booms']:
+            ov,od=overlay()
+            for q in range(2):
+                g=rot+q*math.pi; cx_,cy_=px+math.cos(g)*14,py+math.sin(g)*14
+                od.pieslice([cx_-30,cy_-30,cx_+30,cy_+30],math.degrees(g)+20,math.degrees(g)+160,fill=CC+(255,),outline=(255,230,210,255),width=3)
+            od.ellipse([px-10,py-10,px+10,py+10],fill=(150,50,30,255))
+            lay.alpha_composite(ov)
+            ghosts.append([px,py,4,'boom'])
         for (px,py) in fr['bubs']:
             wob=3*math.sin(t*0.5+px*0.05); rq=17+wob
             ov,od=overlay(); od.ellipse([px-rq,py-rq,px+rq,py+rq],fill=BUB+(60,),outline=BUB+(255,),width=4)
@@ -158,13 +220,13 @@ for t in range(total):
         if hb>0:
             ov,od=overlay(); sr=R*(1-0.4*hb/260); od.ellipse([bx-sr,by-sr*.45,bx+sr,by+sr*.45],fill=(0,0,0,160)); lay.alpha_composite(ov)
             ld.ellipse([bx-sr,by-sr*.45,bx+sr,by+sr*.45],outline=(255,255,255,90),width=3)
-        if fr['claw'] and not ending:
-            ang=math.atan2(ay-by,ax-bx)
-            for k in range(7):
-                off=(k-3)*16; L=90+((t*13+k*29)%70)
-                sx0=bx-math.cos(ang)*(R+10)+math.cos(ang+1.57)*off; sy0=by-math.sin(ang)*(R+10)+math.sin(ang+1.57)*off
-                ld.line([sx0,sy0,sx0-math.cos(ang)*L,sy0-math.sin(ang)*L],fill=(255,200,160,200),width=5)
-            ov,od=overlay(); od.ellipse([bx-R-18,by-R-18,bx+R+18,by+R+18],fill=CC+(80,)); lay.alpha_composite(ov)
+        if fr['burrow'] and not ending:
+            ov,od=overlay(); od.ellipse([bx-R-6,by-R*.55,bx+R+6,by+R*.55],fill=(120,85,45,255),outline=SAND+(255,),width=5)
+            for q in range(4):
+                g=q*1.4+t*0.3; od.line([bx+math.cos(g)*20,by+math.sin(g)*10,bx+math.cos(g)*50,by+math.sin(g)*22],fill=(60,40,20,255),width=4)
+            lay.alpha_composite(ov)
+            e=emo('b',40); lay.alpha_composite(e,(int(bx-20),int(by-R*.55-22)))
+            hpbar(ld,bx,by,bhp,CC,t); return
         if fr['inked'] and not ending:
             ld.ellipse([bx-R-8,cy-R-8,bx+R+8,cy+R+8],outline=INK+(255,),width=8)
             for q in range(3):
@@ -229,8 +291,9 @@ for t in range(total):
             if j==2 and ready and not ending and t>=INTRO:
                 gw=int(4+3*math.sin(t*0.4)); d.rounded_rectangle([x0-gw-2,yy-gw-2,x0+330+gw+2,yy+46+gw+2],radius=16,outline=(255,215,60),width=gw)
             d.rounded_rectangle([x0,yy,x0+330,yy+46],radius=12,outline=(255,215,60) if j==2 else (200,200,200),width=3)
-            d.rounded_rectangle([x0+4,yy+4,x0+4+322*prog,yy+42],radius=10,fill=SKCOL[k] if not ready else (255,255,255))
-            lab=NAMES[k].rstrip('!'); fl=font(28); w=d.textlength(lab,font=fl)
+            mk=fr['n1a'] if k=='s1a' else (fr['n1b'] if k=='s1b' else k)
+            d.rounded_rectangle([x0+4,yy+4,x0+4+322*prog,yy+42],radius=10,fill=SKCOL[mk] if not ready else (255,255,255))
+            lab=NAMES[mk].rstrip('!').replace('CLAW BOOMERANG','BOOMERANG'); fl=font(28); w=d.textlength(lab,font=fl)
             d.text((x0+165-w/2,yy+7),lab,font=fl,fill=(255,255,255),stroke_width=3,stroke_fill=(0,0,0))
     if t<INTRO: ctext(d,W/2,780,'WHO WINS?',font(110),(255,255,255))
     if ending and t-(INTRO+N)>=12:

@@ -21,8 +21,21 @@ Reference code: sim3.py / render3.py / audio3.py (Turtle vs Skunk). Copy and ada
 ## Turtle vs Skunk v3 (current, approved)
 Seed 351, 36 s, Turtle wins on 4 HP. Turtle: SHELL (invulnerable 50 f, cd 170), BITE (dash, 11 dmg, cd 100), ult TIDAL WAVE (ring, 14 dmg, washes away clouds, cd 440). Skunk: SPRAY (5 droplets x3, cd 70), STINK CLOUD (1 dmg/8 f inside, cd 120), ult TOXIC BOMB (16 dmg in radius 230 + cloud, blocked by SHELL, cd 370). Not yet posted.
 
-## Octopus vs Crab (sim4/render4/audio4, made in the standard format)
-Seed 1993, 38 s, Octopus wins on 1 HP. Octopus: INK (3 blobs x2, slows crab 45 f, cd 75), TENTACLE WHIP (range 330, 8 dmg + pull, cd 95), ult KRAKEN (5 tentacles erupt where the crab is heading after a red warning, 9 dmg each, cd 430). Crab: BUBBLES (3 homing x2, cd 80), CLAW DASH (7 dmg, cd 105), ult CRAB CRUSH (leap, lands near the octopus with random lead, 18 dmg in r 190, cd 370). Win split 50/50. Not yet posted.
+## Octopus vs Crab v2 (sim4/render4/audio4, standard format + rotating skill 1)
+Seed 2172, ~35 s, Octopus wins on 2 HP, win split 49/51 over 2500 seeds. Skill 1 of each animal rotates through 3 moves (bar shows the next one).
+Octopus: INK -> INK MINE -> CAMO BLINK | TENTACLE WHIP | ult KRAKEN. Crab: BUBBLES -> PEARL -> BURROW | CLAW BOOMERANG | ult CRAB CRUSH. Not yet posted.
+
+## RULE: every animal has UNIQUE moves (user, 2026-11-28)
+No two animals may share a move or a move mechanic. Before designing a new animal, check this registry and add the new moves to it.
+Skill 1 rotates through 3 different moves (one per cast) so the fight never spams one move.
+Registry (mechanic in brackets):
+- Hedgehog: SPIKE BURST [radial ring of projectiles], ROLL [speed dash, contact dmg]
+- Snake: VENOM [aimed orbs + poison DoT], SHED SKIN [self heal]
+- Turtle: SHELL [full invulnerability window], BITE [aimed lunge, contact dmg], TIDAL WAVE ult [expanding ring, clears zones]
+- Skunk: SPRAY [cone of droplets], STINK CLOUD [lingering damage zone], TOXIC BOMB ult [thrown bomb, AoE + zone]
+- Octopus: INK [aimed blobs + slow], INK MINE [proximity trap], CAMO BLINK [teleport behind + strike], TENTACLE WHIP [instant melee lash + pull], KRAKEN ult [telegraphed eruptions at predicted spot]
+- Crab: BUBBLES [slow homing projectiles], PEARL [ricochet projectile], BURROW [untargetable tunnel + pop-up AoE], CLAW BOOMERANG [out-and-back projectile, 2 hits], CRAB CRUSH ult [leap, untargetable, landing shockwave]
+Already-used mechanics to avoid for new animals: dash/lunge, invulnerability, self heal, cone, lingering zone, ring wave, homing, ricochet, trap, teleport, pull, burrow, leap.
 
 ## Publishing
 Buffer org "My organization"; YouTube channels: Pixel Life (Animal Fight goes here), Pocket City, Some Crazy Thingzz. Pixel Life hit the daily posting limit on 2026-11-28; Hedgehog vs Snake post 6b0a8fd6cf6d91773010c5ba is in error state waiting for a reschedule decision. Two Pixel Life logo drafts (pixel arena mark / PIXEL LIFE text) were proposed; user has not chosen.
