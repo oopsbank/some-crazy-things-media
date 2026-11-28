@@ -10,6 +10,13 @@ New YouTube Shorts format (no channel yet): two sides race, physics decides, we 
 - Intro text: "BIGGER ONE TOUCHES = WINS". Ending "<X> WINS!".
 - Last render: seed 88, 39 s, 10 lead changes; Fire got x100 then Water got x100 4 frames later and won by 3.
 
+## Rule update (v2, seed 18)
+- Each side starts with only 5 small runners (START_N); no automatic spawning. Each runner carries a value starting at 50 (BASE), always shown on its head.
+- Multiplier tile xN: value *= N (50 -> x2 -> 100, x100 -> 5000). Every multiply (N>=2) spawns 2 new runners of the same side at the top (SPAWN, capped at MAXN=40 per side).
+- Big ones have no eyes. Radius = K*sqrt(v)+10 with K=3.5. Car gap GAP=(1300,2000).
+- Also ends when both sides have no runners left: the bigger one wins.
+- Seed 18: 38 s, Fire comes back with a 5000 runner and wins 6422 vs 6228.
+
 ## Older variant (plinko/)
 Two mirrored peg-board lanes, rotating bar, x2 gate, trap; first to 100 wins. Seed 88: Fire 100-99.
 

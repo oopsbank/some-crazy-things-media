@@ -22,8 +22,9 @@ for e in m['ev']:
     elif k=='mult' and e[3]>=3:
         g={3:.15,5:.2,20:.35,100:.5}[e[3]]; f0={3:700,5:900,20:1200,100:1500}[e[3]]
         for j in range(1 if e[3]<20 else 3): add(tone(f0*(1+j*.25),.15,15,True),ts+j*.07,g)
+    elif k=='spawn': add(tone(1000 if e[2]==0 else 1250,.1,20),ts,.12)
     elif k=='feed':
-        if e[3]>=20: add(sweep(200,900,.4,5),ts,.5); add(kick(),ts,.6)
+        if e[3]>=1000: add(sweep(200,900,.4,5),ts,.5); add(kick(),ts,.6)
         elif ts-last.get(k,-1)>.07: add(tone(500 if e[2]==0 else 800,.06,40),ts,.12); last[k]=ts
 add(noise(1.2,3),end,.7); add(sweep(800,200,.8,3),end,.4)
 for j,f in enumerate([523,659,784,1047]): add(tone(f,.5,3,True),end+.6+j*.12,.25)

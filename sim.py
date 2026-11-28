@@ -7,7 +7,9 @@ TILES=[(1,150),(2,130),(3,115),(5,95),(20,62),(100,50)]
 PERIOD=sum(w for _,w in TILES)+ 40
 CONV=2.6
 CX=[270,810]; CY=1490
-def rad(v): return 2.4*max(v,0)+10
+START_N=5; BASE=50; SPAWN=2; DECAY=0.9975; GAP=(1300,2000); MAXN=40
+K=3.5
+def rad(v): return K*math.sqrt(max(v,0))+10
 def tile_at(x,f):
     u=(x+f*CONV)%PERIOD; acc=0
     for m,w in TILES:
@@ -20,30 +22,33 @@ def simulate(seed, record=False):
     cars={l:[] for l in LANES}
     for l,(d,sp) in LANES.items():
         x=rnd.uniform(0,300)
-        while x<W+400: cars[l].append(x); x+=rnd.uniform(560,950)
+        while x<W+400: cars[l].append(x); x+=rnd.uniform(*GAP)
     ch=[]; fly=[]; big=[100.0,100.0]; ev=[]; frames=[]; winner=None; f=0; endf=None; lead=[]
+    def spawn(side,delay):
+        c=C(); c.side=side; c.x=CX[side]+rnd.uniform(-210,210); c.row=0; c.hop=0; c.wait=delay; c.v=BASE; c.mult=None; c.alive=True
+        ch.append(c); return c
+    for side in (0,1):
+        for k in range(START_N): spawn(side,k*rnd.randint(6,14)+rnd.randint(4,12))
     while f<1800:
         for l,(d,sp) in LANES.items():
             cs=[x+d*sp for x in cars[l]]
             if d>0:
                 cs=[x for x in cs if x<W+200]
-                if min(cs)>-CARW: cs.append(min(cs)-rnd.uniform(560,950))
+                if min(cs)>-CARW: cs.append(min(cs)-rnd.uniform(*GAP))
             else:
                 cs=[x for x in cs if x>-200]
-                if max(cs)<W+CARW: cs.append(max(cs)+rnd.uniform(560,950))
+                if max(cs)<W+CARW: cs.append(max(cs)+rnd.uniform(*GAP))
             cars[l]=cs
-        if winner is None:
-            for side in (0,1):
-                if f%9==side*4:
-                    c=C(); c.side=side; c.x=CX[side]+rnd.uniform(-210,210); c.row=0; c.hop=0; c.wait=rnd.randint(4,16); c.v=1; c.mult=None; c.alive=True
-                    ch.append(c)
-        for c in ch:
+        for c in list(ch):
             if c.hop>0:
                 c.hop-=1
                 if c.hop==0:
                     c.row+=1; c.wait=rnd.randint(3,15)
                     if c.row==4:
                         m=tile_at(c.x,f); c.v*=m; c.mult=m; ev.append((f,'mult',c.side,m,c.x))
+                        if m>1 and winner is None and sum(1 for q in ch if q.side==c.side)<MAXN:
+                            for k in range(SPAWN): spawn(c.side,rnd.randint(4,20)+k*8)
+                            ev.append((f,'spawn',c.side,SPAWN))
                     if c.row==9:
                         c.alive=False; fly.append([c.side,c.x,ROWS[9],c.v,0]); 
             elif c.wait>0: c.wait-=1
@@ -62,11 +67,13 @@ def simulate(seed, record=False):
                 if winner is None: big[fl[0]]+=fl[3]; ev.append((f,'feed',fl[0],fl[3]))
         fly=[fl for fl in fly if fl[4]<14]
         if winner is None:
-            for s in (0,1): big[s]*=0.9975
+            for s in (0,1): big[s]*=DECAY
             if rad(big[0])+rad(big[1])>=CX[1]-CX[0]:
                 winner=0 if big[0]>big[1] else 1; endf=f; ev.append((f,'win',winner))
             elif min(big)<1:
                 winner=0 if big[1]<1 else 1; endf=f; ev.append((f,'win',winner))
+            elif not ch and not fly:
+                winner=0 if big[0]>big[1] else 1; endf=f; ev.append((f,'win',winner))
         if record:
             frames.append(dict(cars={l:list(v) for l,v in cars.items()},ch=[(c.side,c.x,c.row,c.hop,c.v,c.mult) for c in ch],fly=[list(x) for x in fly],big=list(big)))
         lead.append(0 if big[0]>big[1] else 1)

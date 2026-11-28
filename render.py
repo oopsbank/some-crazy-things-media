@@ -1,7 +1,7 @@
 import math, random, subprocess, sys, json
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 import sim
-from sim import ROWS, LANES, CARW, TILES, PERIOD, CONV, CX, CY, rad
+from sim import ROWS, LANES, CARW, TILES, PERIOD, CONV, CX, CY, rad, BASE
 SEED=int(sys.argv[1]); OUT=sys.argv[2]
 r=sim.simulate(SEED, record=True); F=r['frames']; EV={}
 for e in r['ev']: EV.setdefault(e[0],[]).append(e)
@@ -20,6 +20,7 @@ def eyes(im):
         d.ellipse([ex-w*.11,cy-h*.11,ex+w*.11,cy+h*.11],fill='white'); d.ellipse([ex-w*.05,cy-h*.02,ex+w*.05,cy+h*.09],fill='black')
     return im
 EF,EW=eyes(emoji('🔥')),eyes(emoji('💧'))
+BIGF,BIGW=emoji('🔥'),emoji('💧')
 SMALL=[EF.resize((54,58),Image.LANCZOS),EW.resize((50,58),Image.LANCZOS)]
 CARS=[emoji(c) for c in '🚗🚕🚙🚌🚓']
 def carimg(k,d):
@@ -73,17 +74,19 @@ for t in range(total):
                 for _ in range(14):
                     a=random.uniform(0,6.28); vv=random.uniform(2,9)
                     parts.append([x0,y0,math.cos(a)*vv,math.sin(a)*vv-(3 if s==0 else 0),(120,120,120) if s==0 else BL,0,'puff' if s==0 else 'drop'])
-                if v>=5: pops.append([x0,y0-50,f'-{v}',(255,80,80),0,46])
+                pops.append([x0,y0-50,f'-{v}',(255,80,80),0,46 if v<1000 else 60])
             if e[1]=='mult' and e[3]>=3:
                 pops.append([e[4],ROWS[4]-60,f'x{e[3]}!',TC[e[3]] if e[3]!=1 else (255,255,255),0,58 if e[3]>=20 else 44])
-            if e[1]=='feed' and e[3]>=5:
+            if e[1]=='spawn':
+                pops.append([CX[e[2]],ROWS[0]-20,f'+{e[3]}',COL[e[2]],0,50])
+            if e[1]=='feed':
                 pops.append([CX[e[2]],CY-rad(fr['big'][e[2]])-40,f'+{e[3]}',COL[e[2]],0,64])
     for (s,x0,row,hop,v,m) in fr['ch'] if not ending else []:
         p=(8-hop)/8 if hop>0 else 0; yy=ROWS[row]+80*p-math.sin(math.pi*p)*26
-        sc=1+0.25*min(math.log10(v),2) if v>1 else 1
+        sc=1+0.25*min(math.log10(v/BASE),2) if v>BASE else 1
         img=SMALL[s] if sc==1 else SMALL[s].resize((int(SMALL[s].size[0]*sc),int(SMALL[s].size[1]*sc)))
         im.alpha_composite(img,(int(x0-img.size[0]/2),int(yy-img.size[1]/2)))
-        if v>1: ctext(d,x0,yy-img.size[1]/2-34,str(v),font(30 if v<100 else 38),(255,230,80) if v>=20 else (255,255,255),3)
+        ctext(d,x0,yy-img.size[1]/2-34,str(v),font(28 if v<1000 else 36),(255,230,80) if v>=1000 else (255,255,255),3)
     for (s,x0,y0,v,k) in fr['fly'] if not ending else []:
         p=k/14; bx=x0+(CX[s]-x0)*p; by=y0+(CY-y0)*p-math.sin(math.pi*p)*120
         im.alpha_composite(SMALL[s],(int(bx-27),int(by-29)))
@@ -98,7 +101,7 @@ for t in range(total):
                     for _ in range(6): parts.append([CX[s]+random.uniform(-rr,rr),CY+random.uniform(-rr,rr)*.6,random.uniform(-1,1),random.uniform(-7,-3),(230,230,230),0,'steam'])
             else: rr*=1+0.04*math.sin(k*.4)
         if rr<4: continue
-        src=EF if s==0 else EW; w2=int(2*rr); h2=int(2*rr*src.size[1]/src.size[0])
+        src=BIGF if s==0 else BIGW; sc2=2*rr/max(src.size); w2=int(src.size[0]*sc2); h2=int(src.size[1]*sc2)
         bimg=src.resize((max(w2,2),max(h2,2)),Image.BILINEAR)
         im.alpha_composite(bimg,(int(CX[s]-w2/2),int(CY-h2/2-rr*0.1)))
         if not (ending and s==lose):
@@ -116,7 +119,7 @@ for t in range(total):
     if t<INTRO:
         d.rectangle([0,1180,W,1360],fill=(0,0,0,200)); ctext(d,W/2,1195,'BIGGER ONE TOUCHES',font(68),(255,255,255)); ctext(d,W/2,1280,'= WINS',font(64),(255,220,0))
     if ending and t-(INTRO+len(F))>=18:
-        ctext(d,W/2,1740,f'{NAME[win]} WINS!',font(110),COL[win],6)
+        ctext(d,W/2,1030,f'{NAME[win]} WINS!',font(110),COL[win],6)
     proc.stdin.write(im.convert('RGB').tobytes())
 proc.stdin.close(); proc.wait()
 json.dump(dict(ev=r['ev'],intro=INTRO,n=len(F),end=END,win=win),open(OUT+'.json','w')); print('done',total)
