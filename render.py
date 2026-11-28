@@ -2,7 +2,7 @@ import math, random, subprocess, sys, json
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
 import sim, shapes
-from sim import ROWS, LANES, CARW, CX, BOT, TOPWIN, rad, box, SPLIT_ROW
+from sim import ROWS, LANES, CARW, CX, BOT, TOPWIN, rad, box, SPLIT_ROW, SKILL_N
 SEED=int(sys.argv[1]); OUT=sys.argv[2]
 r=sim.simulate(SEED, record=True); F=r['frames']; EV={}
 for e in r['ev']: EV.setdefault(e[0],[]).append(e)
@@ -80,6 +80,7 @@ bg.paste(Image.fromarray(ar.astype(np.uint8),'RGB'),(0,990))
 for x in range(0,W,60): d.line([x,990,x,H],fill=(32,46,58),width=1)
 for y in range(990,H,60): d.line([0,y,W,y],fill=(32,46,58),width=1)
 d.rectangle([0,986,W,994],fill=(10,10,14))
+d.rectangle([0,BOT,W,H],fill=(12,14,20)); d.rectangle([0,BOT,W,BOT+6],fill=(70,80,95))
 f1=font(66); P=[('FIRE',OR),(' vs ',(230,230,230)),('WATER',BL)]
 tw=sum(d.textlength(p,font=f1) for p,_ in P); x=(W-tw)/2
 for p,c in P: d.text((x,28),p,font=f1,fill=c,stroke_width=3,stroke_fill=(0,0,0)); x+=d.textlength(p,font=f1)
@@ -114,6 +115,10 @@ for t in range(total):
             if e[1]=='spawn':
                 pops.append([e[4],e[5]-60,'+2',COL[e[2]],0,52])
                 rings.append([e[4],e[5],0,COL[e[2]]])
+            if e[1]=='skill':
+                pops.append([CX[e[2]],max(box(e[2],fr['big'][e[2]])[1]-20,300),['FIRE BLAST!','WATER JET!'][e[2]],COL[e[2]],-10,78])
+            if e[1]=='zap':
+                for _ in range(14): parts.append([e[4],e[5],random.uniform(-4,4),random.uniform(-7,-1),(235,235,235) if e[2]==1 else (110,110,110),0,'steam'])
             if e[1]=='fizzle':
                 for _ in range(10): parts.append([e[4],e[5],random.uniform(-2,2),random.uniform(-6,-2),(230,230,230),0,'steam'])
                 pops.append([e[4],e[5]-50,f'-{e[3]}',(200,200,200),0,40])
@@ -144,7 +149,7 @@ for t in range(total):
         if not ending: labels.append((s,v,rr,top,h2))
     for (s,v,rr,top,h2) in labels:
         fn=font(max(46,min(110,rr*0.3))); txt=str(int(v)); tw_=d.textlength(txt,font=fn)
-        lx=min(max(CX[s],tw_/2+20),W-tw_/2-20); ly=min(max(BOT-h2*0.32,250),H-fn.size-40)
+        lx=min(max(CX[s],tw_/2+20),W-tw_/2-20); ly=min(max(BOT-h2*0.32,250),BOT-fn.size-30)
         ctext(d,lx,ly,txt,fn,(255,255,255),6,tuple(int(c*0.35) for c in COL[s]))
     for (s,x0,row,hop,v,m) in fr['ch'] if not ending else []:
         p=(8-hop)/8 if hop>0 else 0; yy=ROWS[row]+80*p-math.sin(math.pi*p)*26
@@ -169,6 +174,26 @@ for t in range(total):
     for p in pops:
         p[4]+=1; ctext(d,p[0],p[1]-p[4]*2,p[2],font(p[5]),p[3],4)
     pops[:]=[p for p in pops if p[4]<26]
+    if live:
+        ov=Image.new('RGBA',(W,H),(0,0,0,0)); od=ImageDraw.Draw(ov)
+        for s,b in enumerate(fr['beam']):
+            if not b: continue
+            ox,oy,tx,ty=b[1:5]; fl=1+0.15*math.sin(t*1.7)
+            outer=(255,90,20) if s==0 else (40,120,255); mid=(255,170,40) if s==0 else (90,190,255); core=(255,245,200) if s==0 else (225,245,255)
+            od.line([ox,oy,tx,ty],fill=outer+(110,),width=int(110*fl)); od.line([ox,oy,tx,ty],fill=mid+(200,),width=int(64*fl)); od.line([ox,oy,tx,ty],fill=core+(255,),width=int(24*fl))
+            od.ellipse([ox-50,oy-50,ox+50,oy+50],fill=core+(230,))
+            for _ in range(5):
+                q=random.random(); parts.append([ox+(tx-ox)*q,oy+(ty-oy)*q,random.uniform(-3,3),random.uniform(-3,3),mid,8,'drop' if s else 'puff'])
+        im.alpha_composite(ov); d=ImageDraw.Draw(im)
+    for s in (0,1):
+        ch_=fr.get('charge',[0,0])[s] if not ending else 0; active=bool(fr['beam'][s]) if live else False
+        x0_=40 if s==0 else W/2+20; x1_=W/2-20 if s==0 else W-40; y0_,y1_=BOT+40,BOT+110
+        d.rounded_rectangle([x0_,y0_,x1_,y1_],radius=18,fill=(0,0,0),outline=(255,255,255) if active and t%6<3 else COL[s],width=4)
+        sw_=(x1_-x0_-24)/SKILL_N
+        for j in range(SKILL_N):
+            on=j<min(ch_,SKILL_N) or active
+            d.rounded_rectangle([x0_+12+j*sw_+2,y0_+12,x0_+12+(j+1)*sw_-2,y1_-12],radius=6,fill=(COL[s] if not active else (255,255,255)) if on else (40,44,52))
+        lab=['FIRE BLAST','WATER JET'][s]; ctext(d,(x0_+x1_)/2,y1_+10,f'{lab} {min(ch_,SKILL_N)}/{SKILL_N}' if not active else lab+'!',font(34),COL[s],3)
     if not ending:
         for x in range(0,W,40): d.line([x,TOPWIN,x+22,TOPWIN],fill=(255,255,255),width=4)
     b0,b1=fr['big']; frac=b0/(b0+b1) if b0+b1>0 else .5

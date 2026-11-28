@@ -6,7 +6,8 @@ LANES={1:(1,6.5),2:(-1,8.0),6:(-1,7.0),7:(1,8.5)}
 CARW=150
 MULTS=[(1,150),(2,130),(3,115),(5,95),(20,62),(100,50)]   # head multiplier weights
 SPLIT_ROW=4
-CX=[270,810]; BOT=1890; TOPWIN=190; AR=shapes.AR
+CX=[270,810]; BOT=1610; TOPWIN=190; AR=shapes.AR
+SKILL_N=10; BEAMDUR=36; BEAMW=48
 START_N=5; BASE=50; SPAWN=2; DECAY=0.9975; GAP=(1300,2000); MAXN=40
 K=5.5; FEED=0.05
 def rad(v): return K*math.sqrt(max(v,0))+10
@@ -19,13 +20,16 @@ def hit(s,v,x,y):
         if 0<=u<1 and 0<=q<1 and M[int(q*mh),int(u*mw)]: return True
     return False
 class C: pass
+def segd(px,py,ax,ay,bx,by):
+    dx,dy=bx-ax,by-ay; L=dx*dx+dy*dy or 1; t=max(0,min(1,((px-ax)*dx+(py-ay)*dy)/L))
+    return math.hypot(px-ax-t*dx,py-ay-t*dy)
 def simulate(seed, record=False):
     rnd=random.Random(seed)
     cars={l:[] for l in LANES}
     for l,(d,sp) in LANES.items():
         x=rnd.uniform(0,300)
         while x<W+400: cars[l].append(x); x+=rnd.uniform(*GAP)
-    ch=[]; fly=[]; big=[100.0,100.0]; pend=[0.0,0.0]; ev=[]; frames=[]; winner=None; f=0; endf=None; lead=[]
+    ch=[]; fly=[]; big=[100.0,100.0]; pend=[0.0,0.0]; charge=[0,0]; beam=[None,None]; ev=[]; frames=[]; winner=None; f=0; endf=None; lead=[]
     tot=sum(w for _,w in MULTS)
     def pick():
         u=rnd.uniform(0,tot)
@@ -67,15 +71,17 @@ def simulate(seed, record=False):
             elif c.wait>0: c.wait-=1
             else: c.hop=8
             y=ROWS[c.row]+(80*(8-c.hop)/8 if c.hop>0 else 0)
-            # touching any pixel of a big one: own side is absorbed, enemy fizzles
+            # touching any pixel of its own big one: absorbed (enemy big ones are ignored)
             if winner is None:
                 if hit(c.side,big[c.side],c.x,y):
                     c.alive=False
                     # an xN runner multiplies its big one (x1 just adds its 50); the gain flows in gradually
                     gain=big[c.side]*(c.mult-1) if c.mult>1 else c.v
-                    pend[c.side]+=gain; ev.append((f,'eat',c.side,int(gain),c.x,y,c.mult)); split(c,c.x,y); continue
-                if hit(1-c.side,big[1-c.side],c.x,y):
-                    c.alive=False; ev.append((f,'fizzle',c.side,c.v,c.x,y)); continue
+                    pend[c.side]+=gain; charge[c.side]+=1; ev.append((f,'eat',c.side,int(gain),c.x,y,c.mult)); split(c,c.x,y); continue
+                # enemy skill beam
+                b=beam[1-c.side]
+                if b is not None and segd(c.x,y,*b[1:5])<BEAMW:
+                    c.alive=False; ev.append((f,'zap',c.side,c.v,c.x,y)); continue
             for l in LANES:
                 if abs(y-ROWS[l])<30:
                     for x in cars[l]:
@@ -86,10 +92,23 @@ def simulate(seed, record=False):
         for fl in fly:
             fl[4]+=1
             if fl[4]==14:
-                if winner is None: pend[fl[0]]+=fl[3]; ev.append((f,'feed',fl[0],fl[3]))
+                if winner is None: pend[fl[0]]+=fl[3]; charge[fl[0]]+=1; ev.append((f,'feed',fl[0],fl[3]))
         fly=[fl for fl in fly if fl[4]<14]
         if winner is None:
             for s in (0,1):
+                # skill: full bar -> diagonal beam sweeping across the enemy half
+                if beam[s] is not None:
+                    beam[s][0]+=1
+                    if beam[s][0]>=BEAMDUR: beam[s]=None
+                if beam[s] is None and charge[s]>=SKILL_N:
+                    charge[s]-=SKILL_N; beam[s]=[0,0,0,0,0]; ev.append((f,'skill',s))
+                if beam[s] is not None:
+                    x0,y0,w,h=box(s,big[s]); p=beam[s][0]/BEAMDUR
+                    ox=CX[s]; oy=min(max(y0+h*0.12,ROWS[0]+40),BOT-60)
+                    tx=W-20 if s==0 else 20; ty=1000-800*p
+                    beam[s][1:5]=[ox,oy,tx,ty]
+                if not any(q.side==s for q in ch) and not any(fl[0]==s for fl in fly):
+                    for k in range(2): spawn(s,rnd.randint(4,12)+k*8)
                 tr=min(pend[s],max(25,pend[s]*FEED)); big[s]+=tr; pend[s]-=tr; big[s]*=DECAY
             tops=[box(s,big[s])[1] for s in (0,1)]
             if min(tops)<=TOPWIN:
@@ -97,7 +116,7 @@ def simulate(seed, record=False):
             elif (not ch and not fly and max(pend)<1) or f==1799:
                 winner=0 if big[0]>big[1] else 1; endf=f; ev.append((f,'win',winner))
         if record:
-            frames.append(dict(cars={l:list(v) for l,v in cars.items()},ch=[(c.side,c.x,c.row,c.hop,c.v,c.mult) for c in ch],fly=[list(x) for x in fly],big=list(big)))
+            frames.append(dict(cars={l:list(v) for l,v in cars.items()},ch=[(c.side,c.x,c.row,c.hop,c.v,c.mult) for c in ch],fly=[list(x) for x in fly],big=list(big),charge=list(charge),beam=[list(b) if b else None for b in beam]))
         lead.append(0 if big[0]>big[1] else 1)
         f+=1
         if endf is not None and f>endf: break

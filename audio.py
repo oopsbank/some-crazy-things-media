@@ -24,6 +24,8 @@ for e in m['ev']:
         for j in range(1 if e[3]<20 else 3): add(tone(f0*(1+j*.25),.15,15,True),ts+j*.07,g)
     elif k=='spawn':
         for j in range(2): add(tone((1000 if e[2]==0 else 1250)*(1+j*.25),.12,18,True),ts+j*.07,.18)
+    elif k=='skill': add(sweep(150,1600,.9,2),ts,.6); add(noise(1.0,3),ts,.35)
+    elif k=='zap': add(noise(.2,15),ts,.2)
     elif k=='fizzle': add(noise(.25,12),ts,.18)
     elif k=='eat' and e[6]>1:
         add(sweep(300,1200+e[6]*10,.5,4),ts,.45); add(kick(),ts,.5)

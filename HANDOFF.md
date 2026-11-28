@@ -17,7 +17,14 @@ New YouTube Shorts format (no channel yet): two sides race, physics decides, we 
 - Also ends when both sides have no runners left: the bigger one wins.
 - Seed 18: 38 s, Fire comes back with a 5000 runner and wins 6422 vs 6228.
 
-## v5 (seed 223, current) = v4 plus:
+## v6 (seed 313, current) = v5 plus:
+- Big ones anchored higher (BOT=1610) so Shorts UI doesn't cover them; skill bars sit below.
+- Skill bar per side: every runner that reaches its big one (eat or finish) charges 1; at 10 (SKILL_N) the big one fires a diagonal beam
+  (FIRE BLAST / WATER JET) sweeping across the enemy half for BEAMDUR frames; enemy runners within BEAMW of it die ('zap').
+- Enemy big ones no longer kill runners (removed 'fizzle'). If a side has no runners left, 2 respawn at the top.
+- Seed 313: 34.9 s, WATER wins 47174 vs 2393 (x100 at the end), each side fires its skill twice.
+
+## v5 (seed 223) = v4 plus:
 - A runner absorbed by its own big one multiplies it: xN -> big gains big*(N-1), flowing in gradually (x1 just adds 50). Popup "xN!".
 - An absorbed runner that hasn't split yet still spawns its 2 (fixes a side dying out once its big one covers the spawn row).
 - No "-N" popup when a car hits a runner.
