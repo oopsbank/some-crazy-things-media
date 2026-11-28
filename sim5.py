@@ -1,6 +1,6 @@
 """Shovel vs Axe. Side 'a' = Shovel, side 'b' = Axe. Only skill 1 + ultimate (user asked: no skill 2).
 Shovel: DIG (stands still digging, a red zone marks where the axe is heading, then teleports up into the zone: AoE)   | ult BURY (dirt clod; on hit the axe is buried: rooted, silenced, DoT)
-Axe:    WHIRLWIND (spinning damage aura around itself)                     | ult TIMBER (4 trees sprout all over the arena, each falls along a telegraphed line)
+Axe:    WHIRLWIND (spinning damage aura around itself)                     | ult TIMBER (4 trees fall across the whole arena through the shovel, 4 directions, staggered)
 """
 import math, random
 AX0,AY0,AX1,AY1 = 120,420,960,1260
@@ -9,7 +9,7 @@ CD={'dig':80,'bury':380,'whirl':70,'timber':340}
 DIG_WARN=30; DIG_R=160; DIG_DMG=10; DIG_LEAD=(0.3,1.0)
 CLOD_V=15; BURY_LEAD=(-0.4,0.6); BURY_T=60; BURY_TICK=10; BURY_DMG=4
 WHIRL_T=40; WHIRL_R=150; WHIRL_TICK=6; WHIRL_DMG=5
-TIMBER_WARN=24; TIMBER_W=80; TIMBER_DMG=18; TIMBER_FALL=8; TIMBER_N=4; TIMBER_GAP=6; TIMBER_LEN=430; TIMBER_NEAR=260
+TIMBER_WARN=24; TIMBER_W=80; TIMBER_DMG=12; TIMBER_FALL=8; TIMBER_N=4; TIMBER_GAP=6; TIMBER_LEN=430; TIMBER_NEAR=260
 BUMP=2
 class Ball:
     def __init__(s,x,y,a): s.x,s.y=x,y; s.vx=math.cos(a)*SPEED; s.vy=math.sin(a)*SPEED; s.hp=100
@@ -54,12 +54,9 @@ def simulate(seed, record=False):
             if cd['whirl']<=0: cd['whirl']=CD['whirl']; casts.append('whirl'); whirl=WHIRL_T
             if cd['timber']<=0:
                 cd['timber']=CD['timber']; casts.append('timber')
-                for k in range(TIMBER_N):
-                    if k<2: bx_,by_=clampxy(a.x+rnd.uniform(-TIMBER_NEAR,TIMBER_NEAR),a.y+rnd.uniform(-TIMBER_NEAR,TIMBER_NEAR))
-                    else: bx_,by_=rnd.uniform(AX0+60,AX1-60),rnd.uniform(AY0+60,AY1-60)
-                    ang=math.atan2(a.y-by_,a.x-bx_)+rnd.uniform(-.6,.6) if k<2 else rnd.uniform(0,6.283)
-                    ex,ey=line_ends(bx_,by_,ang)[2:]; L=math.hypot(ex-bx_,ey-by_); L2=min(L,TIMBER_LEN)
-                    trees.append(dict(t=-k*TIMBER_GAP,seg=(bx_,by_,bx_+math.cos(ang)*L2,by_+math.sin(ang)*L2),ang=ang))
+                base=rnd.uniform(0,math.pi/4)
+                for k in range(TIMBER_N):   # 4 full-length trees through the shovel, 4 directions (star)
+                    ang=base+k*math.pi/4; trees.append(dict(t=-k*TIMBER_GAP,seg=line_ends(a.x,a.y,ang),ang=ang))
         for c in casts: ev.append((f,'cast',c))
         # --- movement
         movers=([] if dig>0 else [(a,SPEED)])+([] if buried>0 else [(b,SPEED*(1.15 if whirl>0 else 1))])
