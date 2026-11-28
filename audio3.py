@@ -27,6 +27,10 @@ for e in m['ev']:
     elif k=='sprayhit': add(noise(.1,35),ts,.3); add(tone(350,.08,35),ts,.2)
     elif k=='block': add(tone(1500,.15,25),ts,.25); add(tone(2250,.12,30),ts,.12)
     elif k=='bump': add(thud(160),ts,.4)
+    elif k=='wave': add(noise(1.0,3),ts,.35); add(sweep(80,300,.8,3),ts,.4)
+    elif k=='wavehit': add(thud(70),ts,1.0); add(noise(.4,8),ts,.5)
+    elif k=='bomb': add(sweep(600,200,.4,6),ts,.3)
+    elif k=='boom': add(thud(50),ts,1.0); add(noise(.6,6),ts,.7)
 add(noise(.5,8),end,.8); add(thud(70),end,1)
 for j,f in enumerate([523,659,784,1047]): add(tone(f,.5,3,True),end+.4+j*.12,.25)
 out/=np.abs(out).max()/0.85

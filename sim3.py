@@ -1,19 +1,21 @@
 """Turtle vs Skunk. Side 'a' = Turtle, side 'b' = Skunk.
-Turtle: SHELL (invulnerable SHELL_T f), BITE (dash at skunk, BITE_DMG on contact)
-Skunk:  SPRAY (5 droplets, SPRAY_DMG each), STINK CLOUD (gas zone, 1 dmg / GAS_TICK f)
+Turtle: SHELL (invulnerable SHELL_T f), BITE (dash at skunk, BITE_DMG on contact), ult TIDAL WAVE (ring, WAVE_DMG, washes clouds)
+Skunk:  SPRAY (5 droplets, SPRAY_DMG each), STINK CLOUD (gas zone, 1 dmg / GAS_TICK f), ult TOXIC BOMB (BOMB_DMG in BOMB_R + cloud)
 """
 import math, random
 AX0,AY0,AX1,AY1 = 120,420,960,1260
 R=58; SPEED=11.0
-CD={'shell':170,'bite':100,'spray':70,'cloud':120}
-SHELL_T=50; BITE_T=30; BITE_DMG=14; SPRAY_DMG=3; CLOUD_R=150; CLOUD_T=150; GAS_TICK=8; BUMP=2
+CD={'shell':170,'bite':100,'wave':400,'spray':70,'cloud':120,'bomb':400}
+SHELL_T=50; BITE_T=30; BITE_DMG=9; SPRAY_DMG=3; CLOUD_R=150; CLOUD_T=150; GAS_TICK=8; BUMP=2
+WAVE_DMG=14; WAVE_V=18; WAVE_MAX=1250
+BOMB_DMG=16; BOMB_R=230
 class Ball:
     def __init__(s,x,y,a): s.x,s.y=x,y; s.vx=math.cos(a)*SPEED; s.vy=math.sin(a)*SPEED; s.hp=100
 def simulate(seed, record=False):
     rnd=random.Random(seed)
     a=Ball(330,1000,rnd.uniform(0,6.28)); b=Ball(750,680,rnd.uniform(0,6.28))
-    cd={'shell':90,'bite':50,'spray':30,'cloud':80}
-    proj=[]; clouds=[]; shell=0; bite=0; bumpcd=0; ev=[]; frames=[]; lead=[]
+    cd={'shell':90,'bite':50,'wave':280,'spray':30,'cloud':80,'bomb':300}
+    proj=[]; clouds=[]; waves=[]; bombs=[]; shell=0; bite=0; bumpcd=0; ev=[]; frames=[]; lead=[]
     f=0
     while f<2000:
         casts=[]; hits=[]
@@ -22,11 +24,15 @@ def simulate(seed, record=False):
         if cd['bite']<=0:
             cd['bite']=CD['bite']; bite=BITE_T; casts.append('bite')
             ang=math.atan2(b.y-a.y,b.x-a.x); a.vx,a.vy=math.cos(ang),math.sin(ang)
+        if cd['wave']<=0: cd['wave']=CD['wave']; casts.append('wave'); waves.append([a.x,a.y,R,False])
         if cd['spray']<=0:
             cd['spray']=CD['spray']; casts.append('spray')
             base=math.atan2(a.y-b.y,a.x-b.x)
             for da in (-.3,-.15,0,.15,.3):
                 g=base+da; proj.append(dict(x=b.x+math.cos(g)*R,y=b.y+math.sin(g)*R,vx=math.cos(g)*15,vy=math.sin(g)*15,a=g))
+        if cd['bomb']<=0:
+            cd['bomb']=CD['bomb']; casts.append('bomb'); g=math.atan2(a.y-b.y,a.x-b.x)
+            bombs.append(dict(x=b.x+math.cos(g)*R,y=b.y+math.sin(g)*R,vx=math.cos(g)*12,vy=math.sin(g)*12,s=0))
         if cd['cloud']<=0: cd['cloud']=CD['cloud']; casts.append('cloud'); clouds.append([b.x,b.y,CLOUD_T])
         for c in casts: ev.append((f,'cast',c))
         sa=SPEED*(1.8 if bite>0 else 1)
@@ -58,6 +64,21 @@ def simulate(seed, record=False):
                 hurt_a(SPRAY_DMG,'spray'); ev.append((f,'block' if shell>0 else 'sprayhit')); continue
             keep.append(p)
         proj=keep
+        for w in waves:
+            w[2]+=WAVE_V
+            if not w[3] and abs(math.hypot(b.x-w[0],b.y-w[1])-w[2])<R+WAVE_V:
+                w[3]=True; b.hp-=WAVE_DMG; hits.append(('b',WAVE_DMG,'wave')); ev.append((f,'wavehit'))
+            clouds=[c for c in clouds if math.hypot(c[0]-w[0],c[1]-w[1])>w[2]]
+        waves=[w for w in waves if w[2]<WAVE_MAX]
+        booms=[]; kb=[]
+        for p in bombs:
+            p['x']+=p['vx']; p['y']+=p['vy']; p['s']+=1
+            if math.hypot(p['x']-a.x,p['y']-a.y)<R+14 or not(AX0<p['x']<AX1 and AY0<p['y']<AY1) or p['s']>90:
+                bx_,by_=min(max(p['x'],AX0),AX1),min(max(p['y'],AY0),AY1)
+                booms.append((bx_,by_)); ev.append((f,'boom')); clouds.append([bx_,by_,CLOUD_T])
+                if math.hypot(a.x-bx_,a.y-by_)<BOMB_R: hurt_a(BOMB_DMG,'bomb')
+            else: kb.append(p)
+        bombs=kb
         gas=False
         for c in clouds:
             c[2]-=1
@@ -68,7 +89,7 @@ def simulate(seed, record=False):
         shell-=1
         if record:
             frames.append(dict(a=(a.x,a.y,a.hp),b=(b.x,b.y,b.hp),cd=dict(cd),proj=[(p['x'],p['y'],p['a']) for p in proj],
-                               clouds=[tuple(c) for c in clouds],casts=casts,hits=hits,shell=shell>0,bite=bite>0,gas=gas))
+                               clouds=[tuple(c) for c in clouds],waves=[tuple(w[:3]) for w in waves],bombs=[(p['x'],p['y']) for p in bombs],booms=booms,casts=casts,hits=hits,shell=shell>0,bite=bite>0,gas=gas))
         lead.append(1 if a.hp>b.hp else (-1 if b.hp>a.hp else 0))
         f+=1
         if a.hp<=0 or b.hp<=0: break
