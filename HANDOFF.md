@@ -17,6 +17,7 @@ Reference code: sim3.py / render3.py / audio3.py (Turtle vs Skunk). Copy and ada
 - Animal art = pixel sprites (style P1, user-approved): pixelart.pixel_icon('<emoji>',104) — Noto emoji -> 24 px, 14 colours, dark outline, NEAREST upscale. Ball fill is a dark tint of the animal colour so the sprite pops.
 - Basic skills must look polished too: trails, glow, hit particles, block sparks, soft composited clouds (draw translucent shapes on a separate layer and alpha_composite, never fill RGBA directly on the layer or it erases what is underneath).
 - Balance with sim (win split about 45-55 over 300+ seeds), then pick a seed with many lead changes, both ultimates cast at least twice, 30-37 s, winner on <=10 HP.
+- HOOK (trial, user asked): after muxing run python3 hook.py film.mp4 v.mp4.json film_hook.mp4 -> 1.4 s flash-forward just before the final blow with 'IT ENDED ON X HP!' (no spoiler), 0.5 s rewind, then the fight from frame 1 with 'WHO WINS?' overlay. Render json carries whp (winner HP).
 - Pipeline: python3 sim3.py; python3 render3.py <seed> v.mp4; python3 audio3.py v.mp4.json a.wav; ffmpeg mux as above. Events in the json are already remapped to rendered frames (hit-stop included).
 
 ## Turtle vs Skunk v3 (current, approved)

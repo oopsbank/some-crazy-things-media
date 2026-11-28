@@ -233,4 +233,4 @@ for t in range(total):
 proc.stdin.close(); proc.wait()
 ev=[(START[e[0]],)+tuple(e[1:]) for e in r['ev']]
 ev+=[(START[e[0]]-FREEZE,'ultcharge') for e in r['ev'] if e[1]=='cast' and e[2] in ULTS]
-json.dump(dict(ev=sorted(ev,key=lambda e:e[0]),intro=INTRO,n=N,end=END,win=r['win']),open(OUT+'.json','w')); print('done',total)
+json.dump(dict(ev=sorted(ev,key=lambda e:e[0]),intro=INTRO,n=N,end=END,win=r['win'],whp=max(r['ah'],r['bh'])),open(OUT+'.json','w')); print('done',total)
