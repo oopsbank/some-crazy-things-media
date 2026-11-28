@@ -28,10 +28,10 @@ Octopus: INK MINE (proximity trap, 4 dmg + slow, cd 90) | TENTACLE WHIP | ult KR
 (INK, CAMO BLINK, BUBBLES, BURROW are coded in sim4/render4 but not used; A1/B1 tuples pick skill 1.)
 
 ## Shovel vs Axe (sim5/render5/audio5) — objects, only skill 1 + ultimate (user asked to drop skill 2)
-Seed 281, 40 s, Axe wins on 1 HP (killed by the last TIMBER). Win split ~45/55.
-Shovel: DIG [tunnel to where the axe was, untargetable, pop-up AoE 14] | ult BURY [dirt clod; hit = axe rooted + silenced 2 s + 4 dmg / 10 f].
-Axe: WHIRLWIND [spinning damage aura 5 / 6 f] | ult TIMBER [telegraphed line strike along the shovel's path, 30 dmg].
-Not yet posted.
+Seed 58, 39 s, Axe wins on 4 HP. Win split 48/52.
+Shovel: DIG [stands still digging (vulnerable), red zone marks where the axe is heading, then teleports up into the zone: AoE 10] | ult BURY [dirt clod; hit = axe rooted + silenced 2 s + 4 dmg / 10 f].
+Axe: WHIRLWIND [spinning damage aura 5 / 6 f] | ult TIMBER [4 trees sprout all over (2 near the shovel), each falls along its own telegraphed line, 18 dmg each].
+Effects that can spill outside the arena are clipped with put(lay,ov) in render5. Not yet posted.
 
 ## RULE: every animal has UNIQUE moves (user, 2026-11-28)
 No two animals may share a move or a move mechanic. Before designing a new animal, check this registry and add the new moves to it.
@@ -43,10 +43,10 @@ Registry (mechanic in brackets):
 - Skunk: SPRAY [cone of droplets], STINK CLOUD [lingering damage zone], TOXIC BOMB ult [thrown bomb, AoE + zone]
 - Octopus: INK MINE [proximity trap + slow], TENTACLE WHIP [instant melee lash + pull], KRAKEN ult [telegraphed eruptions at predicted spot]
 - Crab: PEARL [ricochet projectile], CLAW BOOMERANG [out-and-back projectile, 2 hits], CRAB CRUSH ult [leap, untargetable, landing shockwave]
-- Shovel: DIG [burrow pop-up], BURY ult [root + silence + DoT]
-- Axe: WHIRLWIND [damage aura], TIMBER ult [telegraphed line strike]
-Already-used mechanics to avoid for new animals: dash/lunge, invulnerability, self heal, cone, lingering zone, ring wave, ricochet, trap, pull, out-and-back, telegraphed eruption, leap, burrow, root/silence, aura, line strike.
-Spare ideas already coded but unused (free to give to a new animal): aimed blobs + slow (INK), teleport strike (CAMO BLINK), homing bubbles.
+- Shovel: DIG [telegraphed zone + teleport strike], BURY ult [root + silence + DoT]
+- Axe: WHIRLWIND [damage aura], TIMBER ult [multiple telegraphed line strikes from sprouting trees]
+Already-used mechanics to avoid for new animals: dash/lunge, invulnerability, self heal, cone, lingering zone, ring wave, ricochet, trap, pull, out-and-back, telegraphed eruption, leap, zone-teleport strike, root/silence, aura, line strike.
+Spare ideas already coded but unused (free to give to a new animal): aimed blobs + slow (INK), homing bubbles, burrow pop-up (BURROW).
 
 ## Publishing
 Buffer org "My organization"; YouTube channels: Pixel Life (Animal Fight goes here), Pocket City, Some Crazy Thingzz. Pixel Life hit the daily posting limit on 2026-11-28; Hedgehog vs Snake post 6b0a8fd6cf6d91773010c5ba is in error state waiting for a reschedule decision. Two Pixel Life logo drafts (pixel arena mark / PIXEL LIFE text) were proposed; user has not chosen.

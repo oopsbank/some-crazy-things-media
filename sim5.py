@@ -1,16 +1,16 @@
 """Shovel vs Axe. Side 'a' = Shovel, side 'b' = Axe. Only skill 1 + ultimate (user asked: no skill 2).
-Shovel: DIG (tunnel underground toward the axe, untargetable, pop-up AoE)   | ult BURY (dirt clod; on hit the axe is buried: rooted, silenced, DoT)
-Axe:    WHIRLWIND (spinning damage aura around itself)                     | ult TIMBER (telegraphed line strike: a tree falls across the arena)
+Shovel: DIG (stands still digging, a red zone marks where the axe is heading, then teleports up into the zone: AoE)   | ult BURY (dirt clod; on hit the axe is buried: rooted, silenced, DoT)
+Axe:    WHIRLWIND (spinning damage aura around itself)                     | ult TIMBER (4 trees sprout all over the arena, each falls along a telegraphed line)
 """
 import math, random
 AX0,AY0,AX1,AY1 = 120,420,960,1260
 R=58; SPEED=11.0
 CD={'dig':80,'bury':380,'whirl':70,'timber':340}
-DIG_T=34; DIG_R=160; DIG_DMG=14
+DIG_WARN=30; DIG_R=160; DIG_DMG=10; DIG_LEAD=(0.3,1.0)
 CLOD_V=15; BURY_LEAD=(-0.4,0.6); BURY_T=60; BURY_TICK=10; BURY_DMG=4
 WHIRL_T=40; WHIRL_R=150; WHIRL_TICK=6; WHIRL_DMG=5
-TIMBER_WARN=24; TIMBER_W=80; TIMBER_DMG=30; TIMBER_FALL=8; TIMBER_SPREAD=0.25
-BUMP=3
+TIMBER_WARN=24; TIMBER_W=80; TIMBER_DMG=18; TIMBER_FALL=8; TIMBER_N=4; TIMBER_GAP=6; TIMBER_LEN=430; TIMBER_NEAR=260
+BUMP=2
 class Ball:
     def __init__(s,x,y,a): s.x,s.y=x,y; s.vx=math.cos(a)*SPEED; s.vy=math.sin(a)*SPEED; s.hp=100
 def clampxy(x,y): return min(max(x,AX0+R),AX1-R),min(max(y,AY0+R),AY1-R)
@@ -30,20 +30,20 @@ def simulate(seed, record=False):
     rnd=random.Random(seed)
     a=Ball(330,1000,rnd.uniform(0,6.28)); b=Ball(750,680,rnd.uniform(0,6.28))
     cd=dict(CD)
-    dig=0; digto=None; buried=0; whirl=0; clods=[]; trees=[]; bumpcd=0; ev=[]; frames=[]; lead=[]
+    dig=0; zone=None; buried=0; whirl=0; clods=[]; trees=[]; bumpcd=0; ev=[]; frames=[]; lead=[]
     f=0
     while f<2000:
-        casts=[]; hits=[]; popup=None; crash=[]; clodhit=None
+        casts=[]; hits=[]; popup=None; tele=None; crash=[]; clodhit=None
         for k in ('dig','bury'): cd[k]-=1
         if buried<=0:
             for k in ('whirl','timber'): cd[k]-=1
         def hurt(o,side,dm,kind,evk=None):
-            if side=='a' and dig>0: return
             o.hp-=dm; hits.append((side,dm,kind))
             if evk: ev.append((f,evk))
         # --- shovel
         if cd['dig']<=0 and dig<=0:
-            cd['dig']=CD['dig']; casts.append('dig'); dig=DIG_T; digto=(b.x,b.y)
+            cd['dig']=CD['dig']; casts.append('dig'); dig=DIG_WARN; ld_=rnd.uniform(*DIG_LEAD)
+            zone=clampxy(b.x+b.vx*DIG_WARN*ld_,b.y+b.vy*DIG_WARN*ld_)
         if cd['bury']<=0 and dig<=0:
             cd['bury']=CD['bury']; casts.append('bury')
             lead_=rnd.uniform(*BURY_LEAD); d=math.hypot(b.x-a.x,b.y-a.y); tt=d/CLOD_V
@@ -54,13 +54,15 @@ def simulate(seed, record=False):
             if cd['whirl']<=0: cd['whirl']=CD['whirl']; casts.append('whirl'); whirl=WHIRL_T
             if cd['timber']<=0:
                 cd['timber']=CD['timber']; casts.append('timber')
-                ang=math.atan2(a.vy,a.vx)+rnd.uniform(-TIMBER_SPREAD,TIMBER_SPREAD); trees.append(dict(t=0,seg=line_ends(a.x,a.y,ang),ang=ang))
+                for k in range(TIMBER_N):
+                    if k<2: bx_,by_=clampxy(a.x+rnd.uniform(-TIMBER_NEAR,TIMBER_NEAR),a.y+rnd.uniform(-TIMBER_NEAR,TIMBER_NEAR))
+                    else: bx_,by_=rnd.uniform(AX0+60,AX1-60),rnd.uniform(AY0+60,AY1-60)
+                    ang=math.atan2(a.y-by_,a.x-bx_)+rnd.uniform(-.6,.6) if k<2 else rnd.uniform(0,6.283)
+                    ex,ey=line_ends(bx_,by_,ang)[2:]; L=math.hypot(ex-bx_,ey-by_); L2=min(L,TIMBER_LEN)
+                    trees.append(dict(t=-k*TIMBER_GAP,seg=(bx_,by_,bx_+math.cos(ang)*L2,by_+math.sin(ang)*L2),ang=ang))
         for c in casts: ev.append((f,'cast',c))
         # --- movement
-        if dig>0:   # tunnel straight to where the axe WAS when the dig started
-            g=math.atan2(digto[1]-a.y,digto[0]-a.x); a.vx,a.vy=math.cos(g),math.sin(g)
-            if math.hypot(digto[0]-a.x,digto[1]-a.y)<SPEED*1.5: dig=1
-        movers=[(a,SPEED*(1.5 if dig>0 else 1))]+([] if buried>0 else [(b,SPEED*(1.15 if whirl>0 else 1))])
+        movers=([] if dig>0 else [(a,SPEED)])+([] if buried>0 else [(b,SPEED*(1.15 if whirl>0 else 1))])
         for o,sp in movers:
             m=math.hypot(o.vx,o.vy) or 1; o.vx*=sp/m; o.vy*=sp/m
             o.x+=o.vx; o.y+=o.vy
@@ -68,19 +70,22 @@ def simulate(seed, record=False):
             if o.x>AX1-R: o.x=AX1-R; o.vx=-abs(o.vx)
             if o.y<AY0+R: o.y=AY0+R; o.vy=abs(o.vy)
             if o.y>AY1-R: o.y=AY1-R; o.vy=-abs(o.vy)
-        if dig>0:
+        if dig>0:   # standing still, digging
             dig-=1
             if dig==0:
-                popup=(a.x,a.y); ev.append((f,'popup'))
+                tele=(a.x,a.y,zone[0],zone[1]); a.x,a.y=zone; popup=(a.x,a.y); ev.append((f,'popup')); zone=None
                 if math.hypot(a.x-b.x,a.y-b.y)<DIG_R: hurt(b,'b',DIG_DMG,'dig')
                 g=rnd.uniform(0,6.28); a.vx,a.vy=math.cos(g),math.sin(g)
         # --- body contact
         dx,dy=b.x-a.x,b.y-a.y; d=math.hypot(dx,dy) or 1
-        if d<2*R and dig<=0:
+        if d<2*R:
             nx,ny=dx/d,dy/d
             if buried>0:   # buried axe is an immovable wall
                 ov=2*R-d; a.x-=nx*ov; a.y-=ny*ov; p=a.vx*nx+a.vy*ny
                 if p>0: a.vx-=2*p*nx; a.vy-=2*p*ny
+            elif dig>0:    # digging shovel is planted: the axe bounces off it
+                ov=2*R-d; b.x+=nx*ov; b.y+=ny*ov; p=b.vx*nx+b.vy*ny
+                if p<0: b.vx-=2*p*nx; b.vy-=2*p*ny
             else:
                 p1=a.vx*nx+a.vy*ny; p2=b.vx*nx+b.vy*ny
                 if p1-p2>0: a.vx+=(p2-p1)*nx; a.vy+=(p2-p1)*ny; b.vx+=(p1-p2)*nx; b.vy+=(p1-p2)*ny
@@ -109,15 +114,16 @@ def simulate(seed, record=False):
         keep=[]
         for tr in trees:
             tr['t']+=1
-            if tr['t']==TIMBER_WARN:
+            if tr['t']==TIMBER_WARN:   # this tree falls now
                 crash.append(tr['seg']); ev.append((f,'crash'))
                 if seg_dist(a.x,a.y,*tr['seg'])<TIMBER_W*.5+R*.6: hurt(a,'a',TIMBER_DMG,'timber')
             if tr['t']<TIMBER_WARN+TIMBER_FALL+20: keep.append(tr)
         trees=keep
         if record:
-            frames.append(dict(a=(a.x,a.y,a.hp),b=(b.x,b.y,b.hp),cd=dict(cd),casts=casts,hits=hits,dig=dig>0,popup=popup,
+            frames.append(dict(a=(a.x,a.y,a.hp),b=(b.x,b.y,b.hp),cd=dict(cd),casts=casts,hits=hits,dig=dig>0,popup=popup,tele=tele,
+                zone=(zone[0],zone[1],1-dig/DIG_WARN) if zone else None,
                 buried=buried,whirl=whirl>0,clods=[(c['x'],c['y'],c['s']) for c in clods],clodhit=clodhit,
-                trees=[(tr['seg'],tr['t'],tr['ang']) for tr in trees],crash=crash))
+                trees=[(tr['seg'],tr['t'],tr['ang']) for tr in trees if tr['t']>=1],crash=crash))
         lead.append(1 if a.hp>b.hp else (-1 if b.hp>a.hp else 0))
         f+=1
         if a.hp<=0 or b.hp<=0: break

@@ -1,5 +1,5 @@
 import math, random, subprocess, sys, json
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageChops
 from sim5 import simulate, AX0,AY0,AX1,AY1,R,CD,DIG_R,WHIRL_R,TIMBER_WARN,TIMBER_W,TIMBER_FALL
 from pixelart import pixel_sprite
 SEED=int(sys.argv[1]); OUT=sys.argv[2]
@@ -24,10 +24,13 @@ NAMES={'dig':'DIG!','bury':'BURY!','whirl':'WHIRLWIND!','timber':'TIMBER!'}
 SKCOL={'dig':DIRT2,'bury':DIRT,'whirl':WIND,'timber':LEAF}
 A_SK=('dig','bury'); B_SK=('whirl','timber'); ULTS=('bury','timber'); FREEZE=16
 INTRO=30; END=70
-pops=[]; flashes=[]; parts=[]; blasts=[]; fxp=[]; logs=[]
+pops=[]; flashes=[]; parts=[]; blasts=[]; fxp=[]; logs=[]; holes=[]
 proc=subprocess.Popen(['ffmpeg','-y','-loglevel','error','-f','rawvideo','-pix_fmt','rgb24','-s',f'{W}x{H}','-r','30','-i','-','-c:v','libx264','-pix_fmt','yuv420p','-crf','18',OUT],stdin=subprocess.PIPE)
 def ctext(d,cx,y,t,fn,fill,**kw):
     w=d.textlength(t,font=fn); d.text((cx-w/2,y),t,font=fn,fill=fill,**kw)
+ARENA=Image.new('L',(1080,1920),0); ImageDraw.Draw(ARENA).rectangle([AX0,AY0,AX1,AY1],fill=255)
+def put(lay,ov):   # composite an effect layer clipped to the arena
+    ov.putalpha(ImageChops.multiply(ov.getchannel('A'),ARENA)); lay.alpha_composite(ov)
 def overlay(): ov=Image.new('RGBA',(W,H),(0,0,0,0)); return ov,ImageDraw.Draw(ov)
 def burst(x,y,n,cols,vmin,vmax,life=(6,11)):
     for _ in range(n):
@@ -69,7 +72,9 @@ for t in range(total):
             pops.append([px+random.uniform(-30,30),py-70,f'-{dm}',col,0,72 if k=='timber' else (40 if k=='bury' else 52)])
         if fr['popup']:
             px,py=fr['popup']; blasts.append([px,py,0]); shake[0]=max(shake[0],14); burst(px,py,40,[DIRT,DIRT2,(255,230,170)],5,20)
-        if fr['dig'] and t%2==0: burst(ax+random.uniform(-30,30),ay+random.uniform(-20,20),2,[DIRT,DIRT2],2,5,(4,7))
+        if fr['dig']: burst(ax+random.uniform(-20,20),ay+R*.5,3,[DIRT,DIRT2],4,10,(5,9))
+        if fr['tele']:
+            ox,oy,nx_,ny_=fr['tele']; holes.append([ox,oy,0]); burst(ox,oy,14,[DIRT,(60,40,20)],3,8)
         if fr['clodhit']:
             hx,hy=fr['clodhit']; shake[0]=max(shake[0],16); flash[:]=[90,DIRT]; burst(hx,hy,45,[DIRT,DIRT2,(90,60,30)],5,18)
             pops.append([hx-60,hy-120,'BURIED!',DIRT2,0,58])
@@ -80,21 +85,42 @@ for t in range(total):
                 u=q/13; burst(x0+(x1-x0)*u,y0+(y1-y0)*u,4,[LEAF,(40,120,50),TRUNK,(255,255,255)],4,14)
     lay=Image.new('RGBA',(W,H),(0,0,0,0)); ld=ImageDraw.Draw(lay)
     if not ending:
-        # timber warning bands
+        # dig target zone
+        if fr['zone']:
+            zx,zy,u=fr['zone']; ov,od=overlay(); rr=DIG_R
+            od.ellipse([zx-rr,zy-rr,zx+rr,zy+rr],fill=RED+(int(35+85*u),))
+            put(lay,ov)
+            pr=rr*(1.5-0.5*u); ld.ellipse([zx-pr,zy-pr,zx+pr,zy+pr],outline=RED+(255,),width=7)
+            ld.ellipse([zx-rr,zy-rr,zx+rr,zy+rr],outline=(255,255,255,160 if (t//3)%2 else 60),width=3)
+            ld.line([zx-40,zy,zx+40,zy],fill=(255,255,255,220),width=5); ld.line([zx,zy-40,zx,zy+40],fill=(255,255,255,220),width=5)
+            g2=emo('a',64).copy(); g2.putalpha(g2.getchannel('A').point(lambda v:v*int(60+120*u)//255)); lay.alpha_composite(g2,(int(zx-32),int(zy-32)))
+        # timber: trees sprouting + warning bands along their fall line
         for (seg,tt,ang) in fr['trees']:
             if tt<TIMBER_WARN:
-                u=tt/TIMBER_WARN; ov,od=overlay(); band(od,seg,TIMBER_W,RED+(int(40+90*u),)); lay.alpha_composite(ov)
-                if (t//3)%2: band(ld,seg,6,(255,255,255,200))
-                x0,y0,x1,y1=seg
-                ld.text(((x0+x1)/2-12,(y0+y1)/2-30),'!',font=font(60),fill=(255,255,255,255),stroke_width=4,stroke_fill=RED+(255,))
+                u=tt/TIMBER_WARN; ov,od=overlay(); band(od,seg,TIMBER_W,RED+(int(30+80*u),)); put(lay,ov)
+                if (t//3)%2: band(ld,seg,5,(255,255,255,190))
+                x0,y0,x1,y1=seg; th=20+70*u; fr_=12+40*u
+                ov,od=overlay()
+                od.ellipse([x0-30,y0-10,x0+30,y0+14],fill=(90,60,30,230))
+                od.rectangle([x0-8-6*u,y0-th,x0+8+6*u,y0],fill=TRUNK+(255,))
+                for q,(ox,oy) in enumerate([(0,-1.0),(-.6,-.7),(.6,-.7)]):
+                    cx,cy=x0+ox*fr_*.8,y0-th+oy*fr_*.6; rq=fr_*(1 if q==0 else .75)
+                    od.ellipse([cx-rq,cy-rq,cx+rq,cy+rq],fill=(LEAF if q==0 else (50,150,60))+(255,),outline=(30,90,40,255),width=3)
+                put(lay,ov)
+                ld.text((x0-12,y0-th-fr_*2-56),'!',font=font(52),fill=(255,255,255,255),stroke_width=4,stroke_fill=RED+(255,))
     for e in blasts:   # dig pop-up dirt blast
         e[2]+=1; k=e[2]; rr=DIG_R*min(1,k/4); al=max(0,220-k*12)
         if al>0:
             ov,od=overlay(); od.ellipse([e[0]-rr,e[1]-rr,e[0]+rr,e[1]+rr],fill=DIRT2+(al//3,),outline=DIRT2+(al,),width=12)
             for q in range(9):
                 g=q/9*6.28+e[1]; od.polygon([(e[0]+math.cos(g-.15)*30,e[1]+math.sin(g-.15)*30),(e[0]+math.cos(g)*rr,e[1]+math.sin(g)*rr),(e[0]+math.cos(g+.15)*30,e[1]+math.sin(g+.15)*30)],fill=DIRT+(al,))
-            lay.alpha_composite(ov)
+            put(lay,ov)
     blasts[:]=[e for e in blasts if e[2]<20]
+    for e in holes:
+        e[2]+=1; al=max(0,230-e[2]*10)
+        if al>0:
+            ov,od=overlay(); od.ellipse([e[0]-R,e[1]-R*.5,e[0]+R,e[1]+R*.5],fill=(30,20,10,al),outline=DIRT2+(al,),width=5); put(lay,ov)
+    holes[:]=[e for e in holes if e[2]<24]
     # fallen trees
     for lg in logs:
         lg[1]+=1; k=lg[1]; al=255 if k<14 else max(0,255-(k-14)*30)
@@ -105,7 +131,7 @@ for t in range(total):
             for q in range(10):
                 u=0.45+q*0.06; cx,cy=x0+(x1-x0)*u,y0+(y1-y0)*u; rr=46+((q*37)%3)*8
                 od.ellipse([cx-rr,cy-rr,cx+rr,cy+rr],fill=(LEAF if q%2 else (50,150,60))+(al,))
-            lay.alpha_composite(ov)
+            put(lay,ov)
     logs[:]=[lg for lg in logs if lg[1]<24]
     if not ending:
         for (cx,cy,s) in fr['clods']:
@@ -119,14 +145,11 @@ for t in range(total):
     if frozen:
         lay.alpha_composite(Image.new('RGBA',(W,H),(0,0,0,170)))
     def draw_a():
-        if fr['dig'] and not ending:
-            ov,od=overlay(); od.ellipse([ax-R-6,ay-R*.55,ax+R+6,ay+R*.55],fill=(110,75,40,255),outline=DIRT2+(255,),width=5)
-            for q in range(4):
-                g=q*1.4+t*0.3; od.line([ax+math.cos(g)*20,ay+math.sin(g)*10,ax+math.cos(g)*50,ay+math.sin(g)*22],fill=(60,40,20,255),width=4)
-            lay.alpha_composite(ov); e=emo('a',52); lay.alpha_composite(e,(int(ax-26),int(ay-R*.55-30)))
-            hpbar(ld,ax,ay,ahp,SC_,t); return
+        digging=fr['dig'] and not ending
         ld.ellipse([ax-R,ay-R,ax+R,ay+R],fill=(25,45,60),outline=(255,255,255),width=5)
-        e=emo('a',104); lay.alpha_composite(e,(int(ax-52),int(ay-52)))
+        e=emo('a',104,(30*math.sin(t*0.9)) if digging else 0); lay.alpha_composite(e,(int(ax-52),int(ay-52+(8*abs(math.sin(t*0.9)) if digging else 0))))
+        if digging:
+            ov,od=overlay(); od.pieslice([ax-R-10,ay+R*.25,ax+R+10,ay+R*1.5],180,360,fill=(115,78,40,255),outline=DIRT2+(255,),width=4); lay.alpha_composite(ov)
         hpbar(ld,ax,ay,0 if (ending and loser=='a') else ahp,SC_,t)
     def draw_b():
         spin=fr['whirl'] and not ending
