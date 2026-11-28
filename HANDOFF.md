@@ -20,6 +20,9 @@ Reference code: sim3.py / render3.py / audio3.py (Turtle vs Skunk). Copy and ada
 ## Turtle vs Skunk v3 (current, approved)
 Seed 351, 36 s, Turtle wins on 4 HP. Turtle: SHELL (invulnerable 50 f, cd 170), BITE (dash, 11 dmg, cd 100), ult TIDAL WAVE (ring, 14 dmg, washes away clouds, cd 440). Skunk: SPRAY (5 droplets x3, cd 70), STINK CLOUD (1 dmg/8 f inside, cd 120), ult TOXIC BOMB (16 dmg in radius 230 + cloud, blocked by SHELL, cd 370). Not yet posted.
 
+## Octopus vs Crab (sim4/render4/audio4, made in the standard format)
+Seed 1993, 38 s, Octopus wins on 1 HP. Octopus: INK (3 blobs x2, slows crab 45 f, cd 75), TENTACLE WHIP (range 330, 8 dmg + pull, cd 95), ult KRAKEN (5 tentacles erupt where the crab is heading after a red warning, 9 dmg each, cd 430). Crab: BUBBLES (3 homing x2, cd 80), CLAW DASH (7 dmg, cd 105), ult CRAB CRUSH (leap, lands near the octopus with random lead, 18 dmg in r 190, cd 370). Win split 50/50. Not yet posted.
+
 ## Publishing
 Buffer org "My organization"; YouTube channels: Pixel Life (Animal Fight goes here), Pocket City, Some Crazy Thingzz. Pixel Life hit the daily posting limit on 2026-11-28; Hedgehog vs Snake post 6b0a8fd6cf6d91773010c5ba is in error state waiting for a reschedule decision. Two Pixel Life logo drafts (pixel arena mark / PIXEL LIFE text) were proposed; user has not chosen.
 
