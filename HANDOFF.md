@@ -73,7 +73,7 @@ Talk Vietnamese to the user. Make films only when asked. Deliver: push mp4 + thu
 
 ## Duel (duel/) — new format, test stage
 - 1v1 red dot vs blue dot (heads seen from above) on a desert map between two compact camps with one big gate each (duel/scene.py).
-- Every skill is telegraphed by a red warning zone that fills up before it fires; fighters dash (i-frames) out of zones.
+- Every skill is telegraphed by a warning zone in the caster's colour (red for red, blue for blue) that fills up before it fires; fighters dash (i-frames) out of zones.
 - Red: SLASH (cone), CHARGE (lane dash), METEOR STORM (ult, 7 staggered meteors). Blue: ICE SHARDS (3 projectiles), SHOCKWAVE (circle), THUNDER JUDGEMENT (ult, circle + cross).
 - Finale: after the K.O. the winner casts skill 4 on the enemy camp (red: INFERNO APOCALYPSE giant meteor; blue: HEAVEN'S WRATH lightning storm + pillar); the camp is replaced by ruins.
 - Run: `cd duel; python3 render.py <seed> v.mp4; python3 audio.py v.mp4.json a.wav; ffmpeg ... -shortest out.mp4`. `python3 sim.py` lists seeds.

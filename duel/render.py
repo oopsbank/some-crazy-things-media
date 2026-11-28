@@ -8,7 +8,7 @@ r=sim.simulate(SEED,record=True); F=r['frames']; EV={}
 for e in r['ev']: EV.setdefault(e[0],[]).append(e)
 W,H=1080,1920; random.seed(SEED)
 RED=(230,60,50); BLUE=(50,120,235); COL=[RED,BLUE]; DARK=[(140,30,25),(25,60,150)]; LIGHT=[(255,150,120),(150,200,255)]
-WARN=(255,40,40); NAME=['RED','BLUE']
+WARN=(255,40,40); WARNC=[(255,40,40),(30,110,255)]; WEDGE=[(255,60,60),(70,150,255)]; WPULSE=[(255,200,80),(170,220,255)]; NAME=['RED','BLUE']
 FINAL=['INFERNO APOCALYPSE',"HEAVEN'S WRATH"]
 FB='/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-ExtraBold.ttf'; FC={}
 def font(s):
@@ -122,7 +122,7 @@ def zoutline(d,z,col,width,phase):
         for s in z['subs']: zoutline(d,s,col,width,phase)
     elif k=='rect':
         dashed(d,[(z['x0'],z['y0']),(z['x1'],z['y0']),(z['x1'],z['y1']),(z['x0'],z['y1'])],col,width,phase=phase)
-def telegraph(im,z,prog,t,big=False):
+def telegraph(im,z,prog,t,big=False,o=0):
     x0,y0,x1,y1=[int(v) for v in zbbox(z)]; x0,y0=max(x0-4,0),max(y0-4,0); x1,y1=min(x1+4,W),min(y1+4,H)
     if x1<=x0 or y1<=y0: return
     m=Image.new('L',(x1-x0,y1-y0),0); zdraw(ImageDraw.Draw(m),z,x0,y0)
@@ -130,9 +130,9 @@ def telegraph(im,z,prog,t,big=False):
     M=np.array(m)>0; P=np.array(pm)>0; hz=((xx_[y0:y1,x0:x1]+yy_[y0:y1,x0:x1]+t*2)//12)%2
     pulse=0.5+0.5*math.sin(t*0.5) if big else 0
     a=M*(50+hz*40+pulse*25)+P*80
-    arr=np.zeros((y1-y0,x1-x0,4),np.uint8); arr[...,0],arr[...,1],arr[...,2]=WARN; arr[...,3]=np.clip(a,0,255).astype(np.uint8)
+    arr=np.zeros((y1-y0,x1-x0,4),np.uint8); arr[...,0],arr[...,1],arr[...,2]=WARNC[o]; arr[...,3]=np.clip(a,0,255).astype(np.uint8)
     im.alpha_composite(Image.fromarray(arr,'RGBA'),(x0,y0))
-    d=ImageDraw.Draw(im); zoutline(d,z,(255,60,60) if not big else (255,int(120+100*pulse),80),5 if not big else 7,t*2)
+    d=ImageDraw.Draw(im); ec=WEDGE[o]; pc_=WPULSE[o]; zoutline(d,z,ec if not big else tuple(int(ec[j]+(pc_[j]-ec[j])*pulse) for j in range(3)),5 if not big else 7,t*2)
 # ---------- state ----------
 parts=[]; fx=[]; pops=[]; decals=[]; banners=[]; shake=[0.0]; flash=[0.0]; dark=[0.0]
 def P(x,y,vx,vy,life,col,size,grav=0.0,kind='dot'): parts.append([x,y,vx,vy,0,life,col,size,grav,kind])
@@ -167,10 +167,10 @@ for t in range(total):
             if random.random()<0.25: P(x,y-20,random.uniform(-.4,.4),random.uniform(-2,-1),40,(70,66,62),random.uniform(10,16),kind='smoke')
     # telegraphs
     for (sk,o,z,pg) in (fr['tele'] if live else []):
-        telegraph(im,z,pg,t,big=sk in ('METEOR','THUNDER'))
+        telegraph(im,z,pg,t,big=sk in ('METEOR','THUNDER'),o=o)
         if sk in ('METEOR','THUNDER') and z['k'] in ('c','m'):
             cz=z if z['k']=='c' else z['subs'][0]
-            ctext(d:=ImageDraw.Draw(im),cz['x'],cz['y']-cz['r']-50,'!',font(46),(255,255,255),6,WARN)
+            ctext(d:=ImageDraw.Draw(im),cz['x'],cz['y']-cz['r']-50,'!',font(46),(255,255,255),6,WARNC[o])
         # falling meteor in the last part of its telegraph
         if sk=='METEOR' and pg>0.6:
             q=(pg-0.6)/0.4; sx,sy=z['x']+340,z['y']-760; mx,my=sx+(z['x']-sx)*q,sy+(z['y']-sy)*q
@@ -225,8 +225,8 @@ for t in range(total):
             if random.random()<0.9:
                 a=random.uniform(0,6.28); rr=random.uniform(80,180); P(wx+math.cos(a)*rr,wy+math.sin(a)*rr,-math.cos(a)*5,-math.sin(a)*5,16,random.choice([COL[win],LIGHT[win],(255,255,255)]),random.uniform(4,8))
         if 60<=k<110:   # huge warning over the whole enemy camp
-            telegraph(im,dict(k='rect',x0=4,y0=y0c,x1=W-4,y1=y1c),(k-60)/50,t,big=True); d=ImageDraw.Draw(im)
-            for x in (180,540,900): ctext(d,x,(y0c+y1c)/2-40,'!',font(80),(255,255,255),8,WARN)
+            telegraph(im,dict(k='rect',x0=4,y0=y0c,x1=W-4,y1=y1c),(k-60)/50,t,big=True,o=win); d=ImageDraw.Draw(im)
+            for x in (180,540,900): ctext(d,x,(y0c+y1c)/2-40,'!',font(80),(255,255,255),8,WARNC[win])
             if k==60: FX_SND.append((t,'alarm'))
         if win==0:      # INFERNO APOCALYPSE: a giant meteor crashes into the blue camp
             if 96<=k<112:
