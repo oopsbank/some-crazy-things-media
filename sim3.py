@@ -5,8 +5,8 @@ Skunk:  SPRAY (5 droplets, SPRAY_DMG each), STINK CLOUD (gas zone, 1 dmg / GAS_T
 import math, random
 AX0,AY0,AX1,AY1 = 120,420,960,1260
 R=58; SPEED=11.0
-CD={'shell':170,'bite':100,'wave':400,'spray':70,'cloud':120,'bomb':400}
-SHELL_T=50; BITE_T=30; BITE_DMG=9; SPRAY_DMG=3; CLOUD_R=150; CLOUD_T=150; GAS_TICK=8; BUMP=2
+CD={'shell':170,'bite':100,'wave':440,'spray':70,'cloud':120,'bomb':370}
+SHELL_T=50; BITE_T=30; BITE_DMG=11; SPRAY_DMG=3; CLOUD_R=150; CLOUD_T=150; GAS_TICK=8; BUMP=2
 WAVE_DMG=14; WAVE_V=18; WAVE_MAX=1250
 BOMB_DMG=16; BOMB_R=230
 class Ball:
@@ -14,7 +14,7 @@ class Ball:
 def simulate(seed, record=False):
     rnd=random.Random(seed)
     a=Ball(330,1000,rnd.uniform(0,6.28)); b=Ball(750,680,rnd.uniform(0,6.28))
-    cd={'shell':90,'bite':50,'wave':280,'spray':30,'cloud':80,'bomb':300}
+    cd=dict(CD)  # every skill charges from empty at the start
     proj=[]; clouds=[]; waves=[]; bombs=[]; shell=0; bite=0; bumpcd=0; ev=[]; frames=[]; lead=[]
     f=0
     while f<2000:
