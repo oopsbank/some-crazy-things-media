@@ -1,5 +1,5 @@
 """Octopus vs Crab. Side 'a' = Octopus, side 'b' = Crab. Every move is unique across the roster (see HANDOFF skill registry).
-Skill 1 of each animal rotates through 3 moves (A1 / B1), one per cast.
+Skill 1 = A1/B1 (fixed: INK MINE / PEARL). INK, CAMO BLINK, BUBBLES, BURROW are implemented but unused.
 Octopus: skill 1 = INK (3 blobs, slow) -> INK MINE (trap, explodes on contact) -> CAMO BLINK (teleport behind crab + strike)
          skill 2 = TENTACLE WHIP (lash in range + pull); ult KRAKEN (tentacles erupt where the crab is heading)
 Crab:    skill 1 = BUBBLES (3 homing) -> PEARL (ricochets off walls) -> BURROW (dig under, pop up under the octopus)
@@ -8,12 +8,12 @@ Crab:    skill 1 = BUBBLES (3 homing) -> PEARL (ricochets off walls) -> BURROW (
 import math, random
 AX0,AY0,AX1,AY1 = 120,420,960,1260
 R=58; SPEED=11.0
-CD={'s1a':75,'whip':95,'kraken':430,'s1b':80,'boomer':105,'crush':370}
-A1=('ink','mine','blink'); B1=('bubbles','pearl','burrow')
-INK_DMG=2; INK_SLOW=45; MINE_DMG=7; MINE_ARM=12; MINE_LIFE=330; BLINK_DMG=5
+CD={'s1a':90,'whip':95,'kraken':430,'s1b':70,'boomer':105,'crush':370}
+A1=('mine',); B1=('pearl',)   # fixed skill 1 (tuple kept so moves can be swapped easily)
+INK_DMG=2; INK_SLOW=45; MINE_DMG=4; MINE_ARM=12; MINE_LIFE=330; BLINK_DMG=5
 WHIP_RANGE=330; WHIP_DMG=6
 KR_N=5; KR_GAP=12; KR_WARN=16; KR_R=90; KR_DMG=8; KR_LEAD=0.5
-BUB_DMG=2; BUB_SPREAD=(-.35,0,.35); PEARL_DMG=5; PEARL_V=17; PEARL_BOUNCES=3
+BUB_DMG=2; BUB_SPREAD=(-.35,0,.35); PEARL_DMG=7; PEARL_V=17; PEARL_BOUNCES=3
 BURROW_T=34; BURROW_DMG=8; BURROW_R=170
 BOOM_V=20; BOOM_OUT=18; BOOM_DMG=4
 CRUSH_T=26; CRUSH_R=190; CR_LEAD=(0.2,0.5); CRUSH_DMG=18; BUMP=1
@@ -39,7 +39,7 @@ def simulate(seed, record=False):
             if evk: ev.append((f,evk))
         # --- octopus skills
         if cd['s1a']<=0:
-            mv=A1[ia%3]; ia+=1; cd['s1a']=CD['s1a']; casts.append(mv); base=math.atan2(b.y-a.y,b.x-a.x)
+            mv=A1[ia%len(A1)]; ia+=1; cd['s1a']=CD['s1a']; casts.append(mv); base=math.atan2(b.y-a.y,b.x-a.x)
             if mv=='ink':
                 for da in (-.2,0,.2):
                     g=base+da; inks.append(dict(x=a.x+math.cos(g)*R,y=a.y+math.sin(g)*R,vx=math.cos(g)*14,vy=math.sin(g)*14,a=g))
@@ -60,7 +60,7 @@ def simulate(seed, record=False):
             for k in range(KR_N): krak.append(dict(t=-k*KR_GAP,x=None,y=None))
         # --- crab skills (not while airborne / underground)
         if cd['s1b']<=0 and not hidden():
-            mv=B1[ib%3]; ib+=1; cd['s1b']=CD['s1b']; casts.append(mv); base=math.atan2(a.y-b.y,a.x-b.x)
+            mv=B1[ib%len(B1)]; ib+=1; cd['s1b']=CD['s1b']; casts.append(mv); base=math.atan2(a.y-b.y,a.x-b.x)
             if mv=='bubbles':
                 for da in BUB_SPREAD:
                     g=base+da; bubs.append(dict(x=b.x+math.cos(g)*R,y=b.y+math.sin(g)*R,a=g,s=0))
@@ -172,7 +172,7 @@ def simulate(seed, record=False):
                 bubs=[(p['x'],p['y']) for p in bubs],pearls=[(p['x'],p['y'],p['vx'],p['vy']) for p in pearls],
                 booms=[(p['x'],p['y'],p['rot'],p['s']>BOOM_OUT) for p in booms],burrow=st['burrow']>0,popup=popup,
                 krak=[(k['x'],k['y'],k['t']) for k in krak if k['t']>=1],erupt=erupt,whip=whip,inked=st['inked']>0,
-                jump=(j['t']/CRUSH_T,j['tx'],j['ty']) if j else None,landed=landed,n1a=A1[ia%3],n1b=B1[ib%3]))
+                jump=(j['t']/CRUSH_T,j['tx'],j['ty']) if j else None,landed=landed,n1a=A1[ia%len(A1)],n1b=B1[ib%len(B1)]))
         lead.append(1 if a.hp>b.hp else (-1 if b.hp>a.hp else 0))
         f+=1
         if a.hp<=0 or b.hp<=0: break
