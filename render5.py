@@ -94,13 +94,20 @@ for t in range(total):
             ld.ellipse([zx-rr,zy-rr,zx+rr,zy+rr],outline=(255,255,255,160 if (t//3)%2 else 60),width=3)
             ld.line([zx-40,zy,zx+40,zy],fill=(255,255,255,220),width=5); ld.line([zx,zy-40,zx,zy+40],fill=(255,255,255,220),width=5)
             g2=emo('a',64).copy(); g2.putalpha(g2.getchannel('A').point(lambda v:v*int(60+120*u)//255)); lay.alpha_composite(g2,(int(zx-32),int(zy-32)))
-        # timber: one red warning band per tree across the whole arena (like v1), 4 directions
+        # timber: a tree grows in each corner; red band shows where it will fall
         for (seg,tt,ang) in fr['trees']:
             if tt<TIMBER_WARN:
                 u=tt/TIMBER_WARN; ov,od=overlay(); band(od,seg,TIMBER_W,RED+(int(40+90*u),)); put(lay,ov)
                 if (t//3)%2: band(ld,seg,6,(255,255,255,200))
-                x0,y0,x1,y1=seg; mx,my=x0+(x1-x0)*.75,y0+(y1-y0)*.75
+                x0,y0,x1,y1=seg; mx,my=x0+(x1-x0)*.6,y0+(y1-y0)*.6
                 ld.text((mx-12,my-30),'!',font=font(60),fill=(255,255,255,255),stroke_width=4,stroke_fill=RED+(255,))
+                th=20+60*u; fr_=14+34*u; ov,od=overlay()
+                od.ellipse([x0-30,y0-10,x0+30,y0+14],fill=(90,60,30,230))
+                od.rectangle([x0-8-5*u,y0-th,x0+8+5*u,y0],fill=TRUNK+(255,))
+                for q,(ox,oy) in enumerate([(0,-1.0),(-.6,-.7),(.6,-.7)]):
+                    cx,cy=x0+ox*fr_*.8,y0-th+oy*fr_*.6; rq=fr_*(1 if q==0 else .75)
+                    od.ellipse([cx-rq,cy-rq,cx+rq,cy+rq],fill=(LEAF if q==0 else (50,150,60))+(255,),outline=(30,90,40,255),width=3)
+                lay.alpha_composite(ov)
     for e in blasts:   # dig pop-up dirt blast
         e[2]+=1; k=e[2]; rr=DIG_R*min(1,k/4); al=max(0,220-k*12)
         if al>0:

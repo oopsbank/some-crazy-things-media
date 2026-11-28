@@ -28,9 +28,9 @@ Octopus: INK MINE (proximity trap, 4 dmg + slow, cd 90) | TENTACLE WHIP | ult KR
 (INK, CAMO BLINK, BUBBLES, BURROW are coded in sim4/render4 but not used; A1/B1 tuples pick skill 1.)
 
 ## Shovel vs Axe (sim5/render5/audio5) — objects, only skill 1 + ultimate (user asked to drop skill 2)
-Seed 543, 36 s, Shovel wins on 1 HP. Win split 46/54.
+Seed 1873, 36 s, Axe wins on 2 HP. Win split 47/53.
 Shovel: DIG [stands still digging (vulnerable), red zone marks where the axe is heading, then teleports up into the zone: AoE 10] | ult BURY [dirt clod; hit = axe rooted + silenced 2 s + 4 dmg / 10 f].
-Axe: WHIRLWIND [spinning damage aura 5 / 6 f] | ult TIMBER [4 full-length trees through the shovel's spot in 4 directions (star), staggered 6 f, v1-style red band + '!', 12 dmg each].
+Axe: WHIRLWIND [spinning damage aura 5 / 6 f] | ult TIMBER [a tree grows in each of the 4 corners, each falls across the arena toward the shovel's spot, staggered 6 f, red band + '!', 10 dmg each].
 Effects that can spill outside the arena are clipped with put(lay,ov) in render5. Not yet posted.
 
 ## RULE: every animal has UNIQUE moves (user, 2026-11-28)
@@ -44,7 +44,7 @@ Registry (mechanic in brackets):
 - Octopus: INK MINE [proximity trap + slow], TENTACLE WHIP [instant melee lash + pull], KRAKEN ult [telegraphed eruptions at predicted spot]
 - Crab: PEARL [ricochet projectile], CLAW BOOMERANG [out-and-back projectile, 2 hits], CRAB CRUSH ult [leap, untargetable, landing shockwave]
 - Shovel: DIG [telegraphed zone + teleport strike], BURY ult [root + silence + DoT]
-- Axe: WHIRLWIND [damage aura], TIMBER ult [4-direction star of telegraphed line strikes]
+- Axe: WHIRLWIND [damage aura], TIMBER ult [4 corner trees = 4 telegraphed line strikes converging on the target]
 Already-used mechanics to avoid for new animals: dash/lunge, invulnerability, self heal, cone, lingering zone, ring wave, ricochet, trap, pull, out-and-back, telegraphed eruption, leap, zone-teleport strike, root/silence, aura, line strike.
 Spare ideas already coded but unused (free to give to a new animal): aimed blobs + slow (INK), homing bubbles, burrow pop-up (BURROW).
 
