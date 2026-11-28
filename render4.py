@@ -13,10 +13,11 @@ ef=ImageFont.truetype('/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf',109)
 def emoji_base(ch):
     im=Image.new('RGBA',(160,160),(0,0,0,0)); ImageDraw.Draw(im).text((10,10),ch,font=ef,embedded_color=True)
     return im.crop(im.getbbox())
-BASE={'a':emoji_base('🐙'),'b':emoji_base('🦀')}; EC={}
+from pixelart import pixel_sprite
+BASE={'a':pixel_sprite('🐙'),'b':pixel_sprite('🦀')}; EC={}
 def emo(side,size):
     size=int(size)//2*2
-    if (side,size) not in EC: EC[(side,size)]=BASE[side].resize((size,size),Image.LANCZOS)
+    if (side,size) not in EC: EC[(side,size)]=BASE[side].resize((size,size),Image.NEAREST)
     return EC[(side,size)]
 OC=(245,120,210); CC=(255,125,70)
 INK=(120,70,210); WH=(225,95,185); KR=(200,60,160); BUB=(130,215,255); GOLD=(255,195,60); RED=(255,70,70)
@@ -146,7 +147,7 @@ for t in range(total):
             ov,od=overlay(); od.ellipse([e[0]-R,e[1]-R,e[0]+R,e[1]+R],fill=TEAL+(al//3,),outline=TEAL+(al,),width=4)
             for q in range(12):
                 u=q/11; od.ellipse([e[0]+(e[2]-e[0])*u-5,e[1]+(e[3]-e[1])*u-5,e[0]+(e[2]-e[0])*u+5,e[1]+(e[3]-e[1])*u+5],fill=TEAL+(al,))
-            g2=emo('a',86).copy(); g2.putalpha(g2.getchannel('A').point(lambda v:v*al//400)); ov.alpha_composite(g2,(int(e[0]-43),int(e[1]-43)))
+            g2=emo('a',104).copy(); g2.putalpha(g2.getchannel('A').point(lambda v:v*al//400)); ov.alpha_composite(g2,(int(e[0]-52),int(e[1]-52)))
             lay.alpha_composite(ov)
     afters[:]=[e for e in afters if e[4]<12]
     for e in inkbooms:
@@ -211,8 +212,8 @@ for t in range(total):
     if frozen:
         lay.alpha_composite(Image.new('RGBA',(W,H),(0,0,0,170)))
     def draw_a():
-        ld.ellipse([ax-R,ay-R,ax+R,ay+R],fill=(120,40,110),outline=(255,255,255),width=5)
-        e=emo('a',86); lay.alpha_composite(e,(int(ax-43),int(ay-43)))
+        ld.ellipse([ax-R,ay-R,ax+R,ay+R],fill=(60,22,58),outline=(255,255,255),width=5)
+        e=emo('a',104); lay.alpha_composite(e,(int(ax-52),int(ay-52)))
         hpbar(ld,ax,ay,0 if (ending and loser=='a') else ahp,OC,t)
     def draw_b():
         sc=1+0.7*math.sin(math.pi*jmp[0]) if jmp and not ending else 1
@@ -225,14 +226,14 @@ for t in range(total):
             for q in range(4):
                 g=q*1.4+t*0.3; od.line([bx+math.cos(g)*20,by+math.sin(g)*10,bx+math.cos(g)*50,by+math.sin(g)*22],fill=(60,40,20,255),width=4)
             lay.alpha_composite(ov)
-            e=emo('b',40); lay.alpha_composite(e,(int(bx-20),int(by-R*.55-22)))
+            e=emo('b',52); lay.alpha_composite(e,(int(bx-26),int(by-R*.55-28)))
             hpbar(ld,bx,by,bhp,CC,t); return
         if fr['inked'] and not ending:
             ld.ellipse([bx-R-8,cy-R-8,bx+R+8,cy+R+8],outline=INK+(255,),width=8)
             for q in range(3):
                 dy_=(t*3+q*17)%40; ld.ellipse([bx-25+q*25-6,cy+R+dy_-6,bx-25+q*25+6,cy+R+dy_+8],fill=INK+(max(0,255-dy_*6),))
-        ld.ellipse([bx-rr,cy-rr,bx+rr,cy+rr],fill=(140,45,30),outline=(255,255,255),width=5)
-        e=emo('b',86*sc); lay.alpha_composite(e,(int(bx-e.width/2),int(cy-e.height/2)))
+        ld.ellipse([bx-rr,cy-rr,bx+rr,cy+rr],fill=(55,22,18),outline=(255,255,255),width=5)
+        e=emo('b',104*sc); lay.alpha_composite(e,(int(bx-e.width/2),int(cy-e.height/2)))
         hpbar(ld,bx,cy,0 if (ending and loser=='b') else bhp,CC,t,rr)
     if ending:
         k=t-(INTRO+N)

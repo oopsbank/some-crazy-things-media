@@ -14,6 +14,7 @@ Reference code: sim3.py / render3.py / audio3.py (Turtle vs Skunk). Copy and ada
 - All skill bars charge from EMPTY at fight start (initial cd = full CD). Give the two ultimates different cooldowns so they never fire on the same frame.
 - Ultimate cast = hit-stop: ~16 frozen frames, screen dims, rays from caster, "ULTIMATE" + skill name in the band above the arena, charge-up riser sound; then white flash + big screen shake on release. Ultimate impacts: colored flash, shake, particle burst, heavy SFX.
 - Small HP bar follows under each animal (turns red and blinks below 25 HP), in addition to the HP panel under the arena.
+- Animal art = pixel sprites (style P1, user-approved): pixelart.pixel_icon('<emoji>',104) — Noto emoji -> 24 px, 14 colours, dark outline, NEAREST upscale. Ball fill is a dark tint of the animal colour so the sprite pops.
 - Basic skills must look polished too: trails, glow, hit particles, block sparks, soft composited clouds (draw translucent shapes on a separate layer and alpha_composite, never fill RGBA directly on the layer or it erases what is underneath).
 - Balance with sim (win split about 45-55 over 300+ seeds), then pick a seed with many lead changes, both ultimates cast at least twice, 30-37 s, winner on <=10 HP.
 - Pipeline: python3 sim3.py; python3 render3.py <seed> v.mp4; python3 audio3.py v.mp4.json a.wav; ffmpeg mux as above. Events in the json are already remapped to rendered frames (hit-stop included).

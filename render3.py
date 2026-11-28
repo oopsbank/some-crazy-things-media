@@ -13,7 +13,8 @@ ef=ImageFont.truetype('/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf',109)
 def emoji(ch,size):
     im=Image.new('RGBA',(160,160),(0,0,0,0)); ImageDraw.Draw(im).text((10,10),ch,font=ef,embedded_color=True)
     return im.crop(im.getbbox()).resize((size,size),Image.LANCZOS)
-EA,EB=emoji('🐢',86),emoji('🦨',86)
+from pixelart import pixel_icon
+EA,EB=pixel_icon('🐢',104),pixel_icon('🦨',104)
 TC=(60,210,170); SC=(235,235,245); GAS=(190,220,60); BR=(170,110,50); WV=(70,170,255); BM=(150,60,200)
 NAMES={'shell':'SHELL!','bite':'BITE!','spray':'SPRAY!','cloud':'STINK CLOUD!','wave':'TIDAL WAVE!','bomb':'TOXIC BOMB!'}
 SKCOL={'shell':BR,'bite':TC,'spray':GAS,'cloud':GAS,'wave':WV,'bomb':BM}
@@ -139,8 +140,8 @@ for t in range(total):
                 ld.line([sx0,sy0,sx0-math.cos(ang)*L,sy0-math.sin(ang)*L],fill=(180,255,230,200),width=5)
             ov=Image.new('RGBA',(W,H),(0,0,0,0)); ImageDraw.Draw(ov).ellipse([ax-R-18,ay-R-18,ax+R+18,ay+R+18],fill=TC+(80,)); lay.alpha_composite(ov)
         if fr['gas'] and not fr['shell'] and not ending: ld.ellipse([ax-R-8,ay-R-8,ax+R+8,ay+R+8],outline=GAS+(255,),width=8)
-        ld.ellipse([ax-R,ay-R,ax+R,ay+R],fill=(30,130,100),outline=(255,255,255),width=5)
-        lay.alpha_composite(EA,(int(ax-43),int(ay-43)))
+        ld.ellipse([ax-R,ay-R,ax+R,ay+R],fill=(18,60,48),outline=(255,255,255),width=5)
+        lay.alpha_composite(EA,(int(ax-52),int(ay-52)))
         hpbar(ld,ax,ay,0 if (ending and loser=='a') else ahp,TC,t)
         if fr['shell'] and not ending:
             ov=Image.new('RGBA',(W,H),(0,0,0,0)); od=ImageDraw.Draw(ov); SR_=R+20
@@ -153,7 +154,7 @@ for t in range(total):
             lay.alpha_composite(ov)
     def draw_b():
         ld.ellipse([bx-R,by-R,bx+R,by+R],fill=(45,45,60),outline=(255,255,255),width=5)
-        lay.alpha_composite(EB,(int(bx-43),int(by-43)))
+        lay.alpha_composite(EB,(int(bx-52),int(by-52)))
         hpbar(ld,bx,by,0 if (ending and loser=='b') else bhp,SC,t)
     if ending:
         k=t-(INTRO+N)
