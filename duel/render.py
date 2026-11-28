@@ -152,7 +152,9 @@ END=240; total=len(F)+END
 ruined=False
 for t in range(total):
     i=min(t,len(F)-1); fr=F[i]; live=t<len(F); k=t-len(F)   # k>=0: finale
-    im=(RUIN if ruined else BG).copy(); d=ImageDraw.Draw(im)
+    im=(RUIN if ruined else BG).copy()
+    if dark[0]>0.01: im=Image.blend(im,Image.new('RGBA',(W,H),(5,8,25,255)),dark[0])   # darken the world first, effects stay bright
+    d=ImageDraw.Draw(im)
     # decals (scorch marks)
     for dc in decals:
         dc[3]+=1; a=int(max(0,200-dc[3]*1.2))
@@ -370,8 +372,7 @@ for t in range(total):
         if k==150: FX_SND.append((t,'win'))
     # ---------- camera: darken, shake, flash ----------
     out=im.convert('RGB')
-    if dark[0]>0.01:
-        out=Image.blend(out,Image.new('RGB',(W,H),(5,8,25)),dark[0]); dark[0]*=0.9 if k<0 or k>=140 else 1.0
+    if dark[0]>0.01: dark[0]*=0.93 if k<0 or k>=140 else 1.0
     if shake[0]>0.5:
         dx,dy=int(random.uniform(-1,1)*shake[0]),int(random.uniform(-1,1)*shake[0])
         sh=Image.new('RGB',(W,H)); sh.paste(out,(dx,dy)); out=sh; shake[0]*=0.86

@@ -96,7 +96,9 @@ def simulate(seed, record=False):
             # ---- choose a skill ----
             d=math.hypot(e.x-f.x,e.y-f.y); ang=math.atan2(e.y-f.y,e.x-f.x)
             cast=None
-            if f.gcd==0 and e.hp>0:
+            # one skill at a time: wait until our previous skill has fully resolved
+            busy=any(t['o']==f.i for t in tele) or (f.i==1 and len(proj)>0)
+            if f.gcd==0 and e.hp>0 and not busy:
                 if f.cd[2]==0: cast=2
                 elif f.cd[1]==0 and (f.i==1 or d<540): cast=1
                 elif f.cd[0]==0 and (f.i==1 or d<190): cast=0
