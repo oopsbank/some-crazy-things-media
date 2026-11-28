@@ -72,10 +72,10 @@ car speed/density (LANES, gap 560-950), x100 rarity (TILES widths, CONV), decay 
 Talk Vietnamese to the user. Make films only when asked. Deliver: push mp4 + thumb to oopsbank/some-crazy-things-media main (pull first), then message the manager session with title/description/pinned comment.
 
 ## Duel (duel/) — new format, test stage
-- 1v1 red dot vs blue dot (heads seen from above) on a desert map between two compact camps with one big gate each (duel/scene.py).
-- Every skill is telegraphed by a warning zone in the caster's colour (red for red, blue for blue) that fills up before it fires; fighters dash (i-frames) out of zones.
-- Red: SLASH (cone), CHARGE (lane dash), METEOR STORM (ult, 7 staggered meteors). Blue: ICE SHARDS (3 projectiles), SHOCKWAVE (circle), THUNDER JUDGEMENT (ult, circle + cross).
-- Finale: after the K.O. the winner casts skill 4 on the enemy camp (red: INFERNO APOCALYPSE giant meteor; blue: HEAVEN'S WRATH lightning storm + pillar); the camp is replaced by ruins.
-- Run: `cd duel; python3 render.py <seed> v.mp4; python3 audio.py v.mp4.json a.wav; ffmpeg ... -shortest out.mp4`. `python3 sim.py` lists seeds.
-- One skill at a time: a fighter can't cast until its previous skill has fully resolved (all its zones fired, its shards gone).
-- Blue (ranged) wins ~83% of seeds (needs balancing). Seed 5 = BLUE wins with 5 HP left, 37.0 s (shows HEAVEN'S WRATH). Red-win candidates: 403, 89, 51.
+- 1v1 red dot vs blue dot (heads seen from above) on a desert map between two compact camps with one big gate each (duel/scene.py). No top/bottom panels; HP bars sit at the gates.
+- Each match draws a different skill set per fighter from a library (sim.NORMAL: 15 skills, sim.ULT: 7 ultimates; elements fire/ice/lightning/poison/void/light/steel). `sim.pick_sets(seed)`.
+- Every skill is telegraphed by a warning zone in the caster's colour that fills up before it fires; fighters dash (i-frames) out of zones. One skill at a time per fighter.
+- Announcements (ultimate banners, K.O., FINAL SKILL) slow the world to 0.15x while they are on screen; audio is built in world time and time-warped onto the video clock (json 'vt'), so sound slows too.
+- Finale: after the K.O. the winner casts skill 4 on the enemy camp, themed by its ultimate's element (sim.FINAL); fire/ice/poison = giant falling object, lightning/light/void = storm + pillar. The camp becomes ruins.
+- Run: `cd duel; python3 render.py <seed> v.mp4; python3 audio.py v.mp4.json a.wav; ffmpeg -i v.mp4 -i a.wav -c:v copy -c:a aac -b:a 192k -shortest out.mp4`. `python3 sim.py` lists close seeds with their skill sets.
+- Win rate ~50/50 now. Seed 83: RED (BLINK STRIKE, VOID CLAW, BLACK HOLE) beats BLUE (ICE SPIKE, ACID BEAM, LASER GRID), 41 s, finale OBLIVION.

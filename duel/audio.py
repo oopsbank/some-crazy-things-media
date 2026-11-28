@@ -1,9 +1,12 @@
+# Builds the soundtrack in world time, then time-warps it onto the video clock (vt = world time per
+# video frame), so slow-motion stretches the sound too (slower and lower, like real slow-mo).
 import json, numpy as np, wave, sys
 m=json.load(open(sys.argv[1])); SR=44100
-N=int(SR*(m['n']+m['end'])/30)+SR; out=np.zeros(N); rng=np.random.default_rng(7)
+VT=np.array(m['vt']); WEND=VT[-1]/30+2
+N=int(SR*WEND); out=np.zeros(N); rng=np.random.default_rng(7)
 def add(sig,t,g=1.0):
     i=int(t*SR)
-    if i>=N: return
+    if i>=N or i<0: return
     j=min(N,i+len(sig)); out[i:j]+=sig[:j-i]*g
 def env(n,dec): return np.exp(-np.arange(n)/SR*dec)
 def tone(f,dur,dec,sq=False):
@@ -16,7 +19,15 @@ def whoosh(d=.25): return lp(noise(d,6),12)*np.sin(np.linspace(0,np.pi,int(SR*d)
 def zap(d=.3): n=int(SR*d); return np.sign(np.sin(2*np.pi*np.cumsum(rng.uniform(300,2400,n))/SR))*env(n,10)*0.4
 def crack():
     z=zap(.6)*0.6; z[:int(SR*.12)]+=noise(.12,25); return z
-# background drum loop
+def chime(f): return tone(f,.25,12)+tone(f*1.5,.25,14)*0.5
+def element_hit(el,ts,g=1.0):
+    if el=='fire': add(boom(.6,6),ts,.5*g); add(lp(noise(.5,5),8),ts,.3*g)
+    elif el=='ice': add(chime(1900),ts,.25*g); add(noise(.1,40),ts,.2*g); add(boom(.3,10),ts,.25*g)
+    elif el=='lightning': add(crack(),ts,.6*g)
+    elif el=='poison': add(lp(noise(.5,6),40),ts,.6*g); add(sweep(300,120,.4,6),ts,.2*g)
+    elif el=='void': add(sweep(600,60,.6,4),ts,.4*g); add(boom(.5,6),ts,.4*g)
+    elif el=='light': add(chime(1300),ts,.3*g); add(sweep(800,2400,.3,8),ts,.2*g)
+    else: add(noise(.1,30),ts,.3*g); add(tone(900,.1,30),ts,.2*g)
 end=m['n']/30; t=0.0
 while t<end:
     add(boom(.25,14),t,.25); add(noise(.04,80),t+.18,.08); t+=.36
@@ -25,15 +36,19 @@ for e in m['ev']:
     if k=='cast':
         add(sweep(400,900,.15,10),ts,.12)
         if e[3]==2: add(sweep(150,1400,1.0,2),ts,.35); add(boom(.8,3),ts,.25)
-    elif k=='slash': add(whoosh(.18)*1.5,ts,.5); add(noise(.05,60),ts+.05,.2)
-    elif k=='charge': add(whoosh(.4),ts,.6); add(sweep(120,60,.4,4),ts,.3)
-    elif k=='charge_end': add(boom(.4,8),ts,.4)
-    elif k=='meteor': add(boom(.9,4),ts,.6)
-    elif k=='shards':
-        for j in range(3): add(tone(1800+j*300,.12,25),ts+j*.03,.15)
-    elif k=='shard_hit': add(tone(2600,.1,30),ts,.15); add(noise(.06,40),ts,.12)
-    elif k=='shock': add(zap(.45),ts,.6); add(boom(.4,8),ts,.3)
-    elif k=='thunder': add(crack(),ts,.8); add(boom(1.5,2.5),ts+.05,.7)
+    elif k=='res':
+        typ,el=e[4],e[5]
+        if typ=='cone': add(whoosh(.18)*1.5,ts,.5); element_hit(el,ts+.03,.5)
+        elif typ=='dash': add(whoosh(.4),ts,.6)
+        elif typ=='fan':
+            for j in range(3): add(tone(1500+j*300,.1,25),ts+j*.03,.12)
+        elif typ=='beam': add(sweep(200,1200,.5,4),ts,.35); element_hit(el,ts,.6)
+        elif typ=='grid': add(sweep(300,1500,.4,5),ts,.3); element_hit(el,ts,.5)
+        elif typ=='cross': add(crack(),ts,.8); add(boom(1.5,2.5),ts+.05,.7)
+        elif typ=='hole': add(sweep(80,30,1.2,2),ts,.6); add(boom(1.4,2.5),ts,.8)
+        else: element_hit(el,ts,1.0)
+    elif k=='dash_end': add(boom(.4,8),ts,.4)
+    elif k=='proj_hit': element_hit(e[5],ts,.5)
     elif k=='hit': add(noise(.08,40),ts,.25); add(tone(140,.12,25),ts,.35)
     elif k=='miss': add(whoosh(.15),ts,.3)
     elif k=='dash': add(whoosh(.2),ts,.45)
@@ -49,5 +64,9 @@ for (fr,k) in m['extra']:
     elif k=='mega_boom': add(boom(3.0,1.2),ts,1.0); add(lp(noise(3.0,1.0),60),ts,.8); add(sweep(400,40,2.0,1.5),ts,.5)
     elif k=='win':
         for j,f in enumerate([523,659,784,1047]): add(tone(f,.5,3,True),ts+j*.13,.3)
-out/=np.abs(out).max()/0.9
-w=wave.open(sys.argv[2],'wb'); w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR); w.writeframes((out*32767).astype(np.int16).tobytes()); w.close()
+# ---- time-warp world audio onto the video clock ----
+nv=len(VT); NO=int(SR*nv/30); vf=np.arange(NO)/SR*30
+wt=np.interp(vf,np.arange(nv),VT)/30*SR
+res=np.interp(wt,np.arange(N),out)
+res/=np.abs(res).max()/0.9
+w=wave.open(sys.argv[2],'wb'); w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR); w.writeframes((res*32767).astype(np.int16).tobytes()); w.close()
