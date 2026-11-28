@@ -111,7 +111,6 @@ for t in range(total):
                 for _ in range(16):
                     a=random.uniform(0,6.28); vv=random.uniform(2,9)
                     parts.append([x0,y0,math.cos(a)*vv,math.sin(a)*vv-(3 if s==0 else 0),(120,120,120) if s==0 else BL,0,'puff' if s==0 else 'drop'])
-                pops.append([x0,y0-50,f'-{v}',(255,80,80),0,44 if v<1000 else 60])
             if e[1]=='spawn':
                 pops.append([e[4],ROWS[SPLIT_ROW]-60,'+2',COL[e[2]],0,52])
                 rings.append([e[4],ROWS[SPLIT_ROW],0,COL[e[2]]])
