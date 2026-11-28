@@ -1,8 +1,8 @@
 import math, random, subprocess, sys, json
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
-import sim
-from sim import ROWS, LANES, CARW, CX, CY, rad, SPLIT_ROW
+import sim, shapes
+from sim import ROWS, LANES, CARW, CX, BOT, TOPWIN, rad, box, SPLIT_ROW
 SEED=int(sys.argv[1]); OUT=sys.argv[2]
 r=sim.simulate(SEED, record=True); F=r['frames']; EV={}
 for e in r['ev']: EV.setdefault(e[0],[]).append(e)
@@ -24,8 +24,6 @@ def eyes(im):
     return im
 BIG0=[emoji('🔥'),emoji('💧')]
 SMALL=[eyes(BIG0[0]).resize((54,58),Image.LANCZOS),eyes(BIG0[1]).resize((50,58),Image.LANCZOS)]
-# smooth hi-res masters for the big ones (upscale once, soften pixel steps)
-BIG=[im.resize((im.size[0]*10,im.size[1]*10),Image.BICUBIC).filter(ImageFilter.GaussianBlur(4)) for im in BIG0]
 CARS=[emoji(c) for c in '🚗🚕🚙🚌🚓']
 def carimg(k,d):
     im=CARS[k%len(CARS)]; im=im.resize((CARW,int(CARW*im.size[1]/im.size[0])),Image.LANCZOS)
@@ -117,30 +115,36 @@ for t in range(total):
             if e[1]=='spawn':
                 pops.append([e[4],ROWS[SPLIT_ROW]-60,'+2',COL[e[2]],0,52])
                 rings.append([e[4],ROWS[SPLIT_ROW],0,COL[e[2]]])
+            if e[1]=='fizzle':
+                for _ in range(10): parts.append([e[4],e[5],random.uniform(-2,2),random.uniform(-6,-2),(230,230,230),0,'steam'])
+                pops.append([e[4],e[5]-50,f'-{e[3]}',(200,200,200),0,40])
             if e[1]=='eat':
-                pops.append([e[4],e[5]-50,f'+{e[3]}',COL[e[2]],0,50 if e[3]<1000 else 66])
+                if e[3]>=250: pops.append([e[4],e[5]-50,f'+{e[3]}',COL[e[2]],0,50 if e[3]<1000 else 66])
                 rings.append([e[4],e[5],0,COL[e[2]]])
             if e[1]=='feed':
-                pops.append([min(max(CX[e[2]],90),W-90),max(CY-rad(fr['big'][e[2]])-40,1010),f'+{e[3]}',COL[e[2]],0,50 if e[3]<1000 else 70])
-    order=(0,1) if fr['big'][0]<fr['big'][1] else (1,0)
+                bx_,by_,bw_,bh_=box(e[2],fr['big'][e[2]]); pops.append([min(max(CX[e[2]],90),W-90),min(max(by_+bh_*0.35,240),H-200),f'+{e[3]}',COL[e[2]],0,50 if e[3]<1000 else 70])
+    order=(0,1) if fr['big'][0]>fr['big'][1] else (1,0)   # bigger behind, smaller in front
+    labels=[]
     for s in order:
         v=fr['big'][s]; rr=rad(v)
         if ending:
             if s==lose:
                 rr*=max(0,1-k/20)
                 if k<20:
-                    for _ in range(6): parts.append([CX[s]+random.uniform(-rr,rr),CY+random.uniform(-rr,rr)*.6,random.uniform(-1,1),random.uniform(-7,-3),(230,230,230),0,'steam'])
-            else: rr=rr+(1250-rr)*ease((k-6)/30)
-        else: rr*=1+0.015*math.sin(t*0.25+s*2)
+                    for _ in range(6): parts.append([CX[s]+random.uniform(-rr,rr),BOT-random.uniform(0,2*rr*shapes.AR),random.uniform(-1,1),random.uniform(-7,-3),(230,230,230),0,'steam'])
+            else: rr=rr+(1500-rr)*ease((k-4)/30)
         if rr<4: continue
-        gs=int(rr*3.0); paste(im,GLOW[s].resize((gs,gs),Image.BILINEAR),CX[s]-gs/2,CY-gs/2)
-        src=BIG[s]; sc=2*rr/src.size[0]; w2=max(int(src.size[0]*sc),2); h2=max(int(src.size[1]*sc),2)
-        paste(im,src.resize((w2,h2),Image.BILINEAR),CX[s]-w2/2,CY-h2*0.62)
-    if not ending:
-        for s in (0,1):
-            v=fr['big'][s]; rr=rad(v); fn=font(max(46,min(110,rr*0.32))); txt=str(int(v))
-            lx=min(max(CX[s],d.textlength(txt,font=fn)/2+20),W-d.textlength(txt,font=fn)/2-20); ly=min(CY+rr*0.35,H-fn.size-40)
-            ctext(d,lx,ly,txt,fn,(255,255,255),6,tuple(int(c*0.35) for c in COL[s]))
+        w2=2*rr; h2=w2*shapes.AR; top=BOT-h2
+        gs=int(max(w2,h2)*1.5); paste(im,GLOW[s].resize((gs,gs),Image.BILINEAR),CX[s]-gs/2,BOT-h2/2-gs/2)
+        if top<H and CX[s]-rr<W:
+            # only resize the visible part when the sprite is huge
+            spr=shapes.sprite(s,w2) if w2<2600 else shapes.sprite(s,2600).resize((int(w2),int(h2)),Image.BILINEAR)
+            paste(im,spr,CX[s]-rr,top)
+        if not ending: labels.append((s,v,rr,top,h2))
+    for (s,v,rr,top,h2) in labels:
+        fn=font(max(46,min(110,rr*0.3))); txt=str(int(v)); tw_=d.textlength(txt,font=fn)
+        lx=min(max(CX[s],tw_/2+20),W-tw_/2-20); ly=min(max(BOT-h2*0.32,250),H-fn.size-40)
+        ctext(d,lx,ly,txt,fn,(255,255,255),6,tuple(int(c*0.35) for c in COL[s]))
     for (s,x0,row,hop,v,m) in fr['ch'] if not ending else []:
         p=(8-hop)/8 if hop>0 else 0; yy=ROWS[row]+80*p-math.sin(math.pi*p)*26
         sc=1+0.12*math.log10(m) if m>1 else 1
@@ -149,7 +153,7 @@ for t in range(total):
         paste(im,img,x0-img.size[0]/2,yy-img.size[1]/2)
         bd=badge(m); paste(im,bd,x0-bd.size[0]/2,yy-img.size[1]/2-38)
     for (s,x0,y0,v,kk) in fr['fly'] if not ending else []:
-        p=kk/14; bx=x0+(CX[s]-x0)*p; by=y0+(CY-y0)*p-math.sin(math.pi*p)*120
+        ty=BOT-rad(fr['big'][s])*shapes.AR; p=kk/14; bx=x0+(CX[s]-x0)*p; by=y0+(ty-y0)*p-math.sin(math.pi*p)*120
         paste(im,SMALL[s],bx-27,by-29)
     for rg in rings:
         rg[2]+=1; rr=10+rg[2]*5; a=max(0,220-rg[2]*16)
@@ -164,6 +168,8 @@ for t in range(total):
     for p in pops:
         p[4]+=1; ctext(d,p[0],p[1]-p[4]*2,p[2],font(p[5]),p[3],4)
     pops[:]=[p for p in pops if p[4]<26]
+    if not ending:
+        for x in range(0,W,40): d.line([x,TOPWIN,x+22,TOPWIN],fill=(255,255,255),width=4)
     b0,b1=fr['big']; frac=b0/(b0+b1) if b0+b1>0 else .5
     if ending: frac=frac+((1.0 if win==0 else 0.0)-frac)*ease(k/20)
     bx0,bx1,by0,by1=60,W-60,118,160; mid=bx0+(bx1-bx0)*frac
@@ -174,7 +180,7 @@ for t in range(total):
     fn=font(30); d.text((bx0+14,by0+3),str(int(b0)),font=fn,fill=(255,255,255),stroke_width=3,stroke_fill=(0,0,0))
     tt=str(int(b1)); d.text((bx1-14-d.textlength(tt,font=fn),by0+3),tt,font=fn,fill=(255,255,255),stroke_width=3,stroke_fill=(0,0,0))
     if t<INTRO:
-        d.rounded_rectangle([60,1130,W-60,1330],radius=30,fill=(0,0,0,210)); ctext(d,W/2,1150,'BIGGER ONE TOUCHES',font(66),(255,255,255)); ctext(d,W/2,1240,'= WINS',font(66),(255,220,0))
+        d.rounded_rectangle([60,1130,W-60,1330],radius=30,fill=(0,0,0,210)); ctext(d,W/2,1150,'FIRST TO FILL',font(70),(255,255,255)); ctext(d,W/2,1240,'THE SCREEN WINS',font(66),(255,220,0))
     if ending and k>=18:
         sc=1+0.25*max(0,1-(k-18)/8)
         ctext(d,W/2,860,f'{NAME[win]} WINS!',font(120*sc),(255,255,255),10,tuple(int(c*0.45) for c in COL[win]))

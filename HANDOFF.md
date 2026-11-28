@@ -17,7 +17,14 @@ New YouTube Shorts format (no channel yet): two sides race, physics decides, we 
 - Also ends when both sides have no runners left: the bigger one wins.
 - Seed 18: 38 s, Fire comes back with a 5000 runner and wins 6422 vs 6228.
 
-## v3 (seed 484, current)
+## v4 (seed 313, current)
+- Big blobs are crisp vector art (shapes.py: flame + drop, same aspect AR=1.3), anchored at the bottom (BOT) and growing upward.
+- Gains go into a pending pool that flows in at 5%/frame (FEED), so size and number grow gradually.
+- Pixel-exact touch: a runner hitting any pixel of its own big one is absorbed ('eat'); hitting the enemy's fizzles ('fizzle').
+- Win: first big one whose top reaches the dashed line under the HUD (TOPWIN) fills the screen and wins. No touching rule. K=5.5.
+- Seed 313: 39.8 s, FIRE wins 13789 vs 11020 (loser at 90% height), 7 lead changes.
+
+## v3 (seed 484)
 - Conveyor removed. Each runner is born with a head badge x1/x2/x3/x5/x20/x100 (weights MULTS) and value 50*m.
 - Crossing the middle grass line (SPLIT_ROW) with m>=2 spawns 2 new runners of the same side at the top (cap MAXN).
 - Big ones have no size cap and may overflow the screen; a runner touching its own big one is absorbed immediately ('eat').

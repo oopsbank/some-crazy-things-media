@@ -1,14 +1,23 @@
 import math, random
+import shapes
 W=1080
 ROWS=[230,310,390,470,550,630,710,790,870,950]   # 0 spawn,1-2 road A,3-5 walk (split at 4),6-7 road B,8 walk,9 finish
 LANES={1:(1,6.5),2:(-1,8.0),6:(-1,7.0),7:(1,8.5)}
 CARW=150
 MULTS=[(1,150),(2,130),(3,115),(5,95),(20,62),(100,50)]   # head multiplier weights
 SPLIT_ROW=4
-CX=[200,880]; CY=1400
+CX=[270,810]; BOT=1890; TOPWIN=190; AR=shapes.AR
 START_N=5; BASE=50; SPAWN=2; DECAY=0.9975; GAP=(1300,2000); MAXN=40
-K=4.5
+K=5.5; FEED=0.05
 def rad(v): return K*math.sqrt(max(v,0))+10
+def box(s,v):
+    rr=rad(v); w=2*rr; h=w*AR; return CX[s]-rr,BOT-h,w,h
+def hit(s,v,x,y):
+    x0,y0,w,h=box(s,v); M=shapes.mask(s); mh,mw=M.shape
+    for dx,dy in ((0,0),(-22,0),(22,0),(0,-26),(0,26)):
+        u=(x+dx-x0)/w; q=(y+dy-y0)/h
+        if 0<=u<1 and 0<=q<1 and M[int(q*mh),int(u*mw)]: return True
+    return False
 class C: pass
 def simulate(seed, record=False):
     rnd=random.Random(seed)
@@ -16,7 +25,7 @@ def simulate(seed, record=False):
     for l,(d,sp) in LANES.items():
         x=rnd.uniform(0,300)
         while x<W+400: cars[l].append(x); x+=rnd.uniform(*GAP)
-    ch=[]; fly=[]; big=[100.0,100.0]; ev=[]; frames=[]; winner=None; f=0; endf=None; lead=[]
+    ch=[]; fly=[]; big=[100.0,100.0]; pend=[0.0,0.0]; ev=[]; frames=[]; winner=None; f=0; endf=None; lead=[]
     tot=sum(w for _,w in MULTS)
     def pick():
         u=rnd.uniform(0,tot)
@@ -55,9 +64,12 @@ def simulate(seed, record=False):
             elif c.wait>0: c.wait-=1
             else: c.hop=8
             y=ROWS[c.row]+(80*(8-c.hop)/8 if c.hop>0 else 0)
-            # touching own big one -> absorbed immediately
-            if winner is None and math.hypot(c.x-CX[c.side],y-CY)<rad(big[c.side])+12:
-                c.alive=False; big[c.side]+=c.v; ev.append((f,'eat',c.side,c.v,c.x,y)); continue
+            # touching any pixel of a big one: own side is absorbed, enemy fizzles
+            if winner is None:
+                if hit(c.side,big[c.side],c.x,y):
+                    c.alive=False; pend[c.side]+=c.v; ev.append((f,'eat',c.side,c.v,c.x,y)); continue
+                if hit(1-c.side,big[1-c.side],c.x,y):
+                    c.alive=False; ev.append((f,'fizzle',c.side,c.v,c.x,y)); continue
             for l in LANES:
                 if abs(y-ROWS[l])<30:
                     for x in cars[l]:
@@ -68,13 +80,15 @@ def simulate(seed, record=False):
         for fl in fly:
             fl[4]+=1
             if fl[4]==14:
-                if winner is None: big[fl[0]]+=fl[3]; ev.append((f,'feed',fl[0],fl[3]))
+                if winner is None: pend[fl[0]]+=fl[3]; ev.append((f,'feed',fl[0],fl[3]))
         fly=[fl for fl in fly if fl[4]<14]
         if winner is None:
-            for s in (0,1): big[s]*=DECAY
-            if rad(big[0])+rad(big[1])>=CX[1]-CX[0]:
-                winner=0 if big[0]>big[1] else 1; endf=f; ev.append((f,'win',winner))
-            elif (not ch and not fly) or f==1799:
+            for s in (0,1):
+                tr=min(pend[s],max(25,pend[s]*FEED)); big[s]+=tr; pend[s]-=tr; big[s]*=DECAY
+            tops=[box(s,big[s])[1] for s in (0,1)]
+            if min(tops)<=TOPWIN:
+                winner=0 if tops[0]<=tops[1] else 1; endf=f; ev.append((f,'win',winner))
+            elif (not ch and not fly and max(pend)<1) or f==1799:
                 winner=0 if big[0]>big[1] else 1; endf=f; ev.append((f,'win',winner))
         if record:
             frames.append(dict(cars={l:list(v) for l,v in cars.items()},ch=[(c.side,c.x,c.row,c.hop,c.v,c.mult) for c in ch],fly=[list(x) for x in fly],big=list(big)))
@@ -82,7 +96,7 @@ def simulate(seed, record=False):
         f+=1
         if endf is not None and f>endf: break
     lc=sum(1 for i in range(1,len(lead)) if lead[i]!=lead[i-1])
-    touch=rad(big[0])+rad(big[1])>=CX[1]-CX[0]
+    touch=min(box(s,big[s])[1] for s in (0,1))<=TOPWIN
     eats=sum(1 for e in ev if e[1]=='eat')
     return dict(frames=frames,ev=ev,win=winner,n=f,big=big,lc=lc,touch=touch,eats=eats)
 if __name__=='__main__':
