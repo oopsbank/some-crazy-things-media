@@ -72,7 +72,7 @@ car speed/density (LANES, gap 560-950), x100 rarity (TILES widths, CONV), decay 
 Talk Vietnamese to the user. Make films only when asked. Deliver: push mp4 + thumb to oopsbank/some-crazy-things-media main (pull first), then message the manager session with title/description/pinned comment.
 
 ## Duel (duel/) — new format, test stage
-- 1v1 red dot vs blue dot (heads seen from above) on a desert map between two compact camps with one big gate each (duel/scene.py). No top/bottom panels; HP bars sit at the gates.
+- 1v1 red dot vs blue dot (heads seen from above) on a desert map between two compact camps with one big gate each (duel/scene.py). No top/bottom panels and no gate HP bars; only a tiny HP bar above each dot.
 - Each match draws a different skill set per fighter from a library (sim.NORMAL: 15 skills, sim.ULT: 7 ultimates; elements fire/ice/lightning/poison/void/light/steel). `sim.pick_sets(seed)`.
 - Every skill is telegraphed by a warning zone in the caster's colour that fills up before it fires; fighters dash (i-frames) out of zones. One skill at a time per fighter.
 - Announcements (ultimate banners, K.O., FINAL SKILL) slow the world to 0.15x while they are on screen; audio is built in world time and time-warped onto the video clock (json 'vt'), so sound slows too.

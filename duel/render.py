@@ -414,13 +414,6 @@ while Tw<TOTAL_W-1:
             sz=p[7]*(1-qq)
             if sz>0.5: d.ellipse([p[0]-sz,p[1]-sz,p[0]+sz,p[1]+sz],fill=p[6])
     parts[:]=[p for p in parts if p[4]<p[5]]
-    # ---- HP bars at the gates ----
-    if live or kf<60:
-        for s in (0,1):
-            hp=fr['f'][s][2]; cx,yb=540,HPY[s]; w=120
-            d.rounded_rectangle([cx-w,yb,cx+w,yb+24],radius=12,fill=(0,0,0),outline=(255,255,255),width=2)
-            if hp>0: d.rounded_rectangle([cx-w+4,yb+4,cx-w+4+(2*w-8)*hp/HP0,yb+20],radius=8,fill=COL[s])
-            ctext(d,cx,yb-1,f'{int(hp)}',font(21),(255,255,255),3)
     # ---- damage popups (world time) ----
     for p in pops:
         p[4]+=dt; yy=p[1]-max(0,p[4])*1.6; sc=1+0.4*max(0,1-p[4]/5) if p[4]>=0 else 1.5
