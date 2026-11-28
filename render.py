@@ -112,13 +112,15 @@ for t in range(total):
                     a=random.uniform(0,6.28); vv=random.uniform(2,9)
                     parts.append([x0,y0,math.cos(a)*vv,math.sin(a)*vv-(3 if s==0 else 0),(120,120,120) if s==0 else BL,0,'puff' if s==0 else 'drop'])
             if e[1]=='spawn':
-                pops.append([e[4],ROWS[SPLIT_ROW]-60,'+2',COL[e[2]],0,52])
-                rings.append([e[4],ROWS[SPLIT_ROW],0,COL[e[2]]])
+                pops.append([e[4],e[5]-60,'+2',COL[e[2]],0,52])
+                rings.append([e[4],e[5],0,COL[e[2]]])
             if e[1]=='fizzle':
                 for _ in range(10): parts.append([e[4],e[5],random.uniform(-2,2),random.uniform(-6,-2),(230,230,230),0,'steam'])
                 pops.append([e[4],e[5]-50,f'-{e[3]}',(200,200,200),0,40])
             if e[1]=='eat':
-                if e[3]>=250: pops.append([e[4],e[5]-50,f'+{e[3]}',COL[e[2]],0,50 if e[3]<1000 else 66])
+                if e[6]>1:
+                    pops.append([e[4],e[5]-50,f'x{e[6]}!',TC[e[6]],0,72])
+                    bx_,by_,bw_,bh_=box(e[2],fr['big'][e[2]]); pops.append([min(max(CX[e[2]],140),W-140),min(max(by_+bh_*0.2,260),H-200),f'x{e[6]}',COL[e[2]],0,110])
                 rings.append([e[4],e[5],0,COL[e[2]]])
             if e[1]=='feed':
                 bx_,by_,bw_,bh_=box(e[2],fr['big'][e[2]]); pops.append([min(max(CX[e[2]],90),W-90),min(max(by_+bh_*0.35,240),H-200),f'+{e[3]}',COL[e[2]],0,50 if e[3]<1000 else 70])

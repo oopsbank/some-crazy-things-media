@@ -37,6 +37,13 @@ def simulate(seed, record=False):
         c=C(); c.side=side; c.x=CX[side]+rnd.uniform(-170,170); c.x=min(max(c.x,40),W-40)
         c.row=0; c.hop=0; c.wait=delay; c.mult=pick(); c.v=BASE*c.mult; c.alive=True; c.split=False
         ch.append(c); return c
+    def split(c,x,y):
+        # a runner with x2+ splits once: 2 new runners of its side appear at the top
+        if c.mult>1 and winner is None and not c.split:
+            c.split=True
+            if sum(1 for q in ch if q.side==c.side and q.alive)<MAXN:
+                for k in range(SPAWN): spawn(c.side,rnd.randint(4,20)+k*8)
+                ev.append((f,'spawn',c.side,SPAWN,x,y))
     for side in (0,1):
         for k in range(START_N): spawn(side,k*rnd.randint(6,14)+rnd.randint(4,12))
     while f<1800:
@@ -54,11 +61,7 @@ def simulate(seed, record=False):
                 c.hop-=1
                 if c.hop==0:
                     c.row+=1; c.wait=rnd.randint(3,15)
-                    if c.row==SPLIT_ROW and c.mult>1 and winner is None and not c.split:
-                        c.split=True
-                        if sum(1 for q in ch if q.side==c.side)<MAXN:
-                            for k in range(SPAWN): spawn(c.side,rnd.randint(4,20)+k*8)
-                            ev.append((f,'spawn',c.side,SPAWN,c.x))
+                    if c.row==SPLIT_ROW: split(c,c.x,ROWS[SPLIT_ROW])
                     if c.row==9:
                         c.alive=False; fly.append([c.side,c.x,ROWS[9],c.v,0]); continue
             elif c.wait>0: c.wait-=1
@@ -67,7 +70,10 @@ def simulate(seed, record=False):
             # touching any pixel of a big one: own side is absorbed, enemy fizzles
             if winner is None:
                 if hit(c.side,big[c.side],c.x,y):
-                    c.alive=False; pend[c.side]+=c.v; ev.append((f,'eat',c.side,c.v,c.x,y)); continue
+                    c.alive=False
+                    # an xN runner multiplies its big one (x1 just adds its 50); the gain flows in gradually
+                    gain=big[c.side]*(c.mult-1) if c.mult>1 else c.v
+                    pend[c.side]+=gain; ev.append((f,'eat',c.side,int(gain),c.x,y,c.mult)); split(c,c.x,y); continue
                 if hit(1-c.side,big[1-c.side],c.x,y):
                     c.alive=False; ev.append((f,'fizzle',c.side,c.v,c.x,y)); continue
             for l in LANES:

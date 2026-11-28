@@ -17,7 +17,13 @@ New YouTube Shorts format (no channel yet): two sides race, physics decides, we 
 - Also ends when both sides have no runners left: the bigger one wins.
 - Seed 18: 38 s, Fire comes back with a 5000 runner and wins 6422 vs 6228.
 
-## v4 (seed 313, current)
+## v5 (seed 223, current) = v4 plus:
+- A runner absorbed by its own big one multiplies it: xN -> big gains big*(N-1), flowing in gradually (x1 just adds 50). Popup "xN!".
+- An absorbed runner that hasn't split yet still spawns its 2 (fixes a side dying out once its big one covers the spawn row).
+- No "-N" popup when a car hits a runner.
+- Seed 223: 37.8 s, FIRE wins 15905 vs 3340 after a chain of x3 x2 x3 x2 x5 at the end.
+
+## v4 (seed 313)
 - Big blobs are crisp vector art (shapes.py: flame + drop, same aspect AR=1.3), anchored at the bottom (BOT) and growing upward.
 - Gains go into a pending pool that flows in at 5%/frame (FEED), so size and number grow gradually.
 - Pixel-exact touch: a runner hitting any pixel of its own big one is absorbed ('eat'); hitting the enemy's fizzles ('fizzle').
