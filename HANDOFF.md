@@ -17,6 +17,14 @@ New YouTube Shorts format (no channel yet): two sides race, physics decides, we 
 - Also ends when both sides have no runners left: the bigger one wins.
 - Seed 18: 38 s, Fire comes back with a 5000 runner and wins 6422 vs 6228.
 
+## v3 (seed 484, current)
+- Conveyor removed. Each runner is born with a head badge x1/x2/x3/x5/x20/x100 (weights MULTS) and value 50*m.
+- Crossing the middle grass line (SPLIT_ROW) with m>=2 spawns 2 new runners of the same side at the top (cap MAXN).
+- Big ones have no size cap and may overflow the screen; a runner touching its own big one is absorbed immediately ('eat').
+- Win: the two big ones touch (CX=[200,880], rad=K*sqrt(v)+10, K=4.5) -> bigger wins; also if all runners are gone.
+- Graphics: textured roads, shadows, glow, colored x-badges, tug bar HUD, winner swells to fill the screen.
+- Seed 484: 33.6 s, FIRE wins 6795 vs 6294, 14 eats.
+
 ## Older variant (plinko/)
 Two mirrored peg-board lanes, rotating bar, x2 gate, trap; first to 100 wins. Seed 88: Fire 100-99.
 
