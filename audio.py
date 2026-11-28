@@ -27,8 +27,6 @@ for e in m['ev']:
     elif k=='skill': add(sweep(150,1600,.9,2),ts,.6); add(noise(1.0,3),ts,.35)
     elif k=='zap': add(noise(.2,15),ts,.2)
     elif k=='fizzle': add(noise(.25,12),ts,.18)
-    elif k=='eat' and e[6]>1:
-        add(sweep(300,1200+e[6]*10,.5,4),ts,.45); add(kick(),ts,.5)
     elif k in ('feed','eat'):
         if e[3]>=1000: add(sweep(200,900,.4,5),ts,.5); add(kick(),ts,.6)
         elif ts-last.get(k,-1)>.07: add(tone(500 if e[2]==0 else 800,.06,40),ts,.12); last[k]=ts

@@ -91,7 +91,7 @@ total=INTRO+len(F)+END; win=r['win']; lose=1-win
 BADGE={}
 def badge(m):
     if m not in BADGE:
-        fn=font(26); t=f'x{m}'; tw=int(ImageDraw.Draw(Image.new('RGBA',(1,1))).textlength(t,font=fn))
+        fn=font(26); t=f'+{m*sim.BASE}'; tw=int(ImageDraw.Draw(Image.new('RGBA',(1,1))).textlength(t,font=fn))
         im=Image.new('RGBA',(tw+22,36),(0,0,0,0)); dd=ImageDraw.Draw(im)
         dd.rounded_rectangle([1,1,tw+20,34],radius=12,fill=TC[m]+(255,),outline=(255,255,255),width=2)
         dd.text((11,2),t,font=fn,fill=(255,255,255),stroke_width=2,stroke_fill=(0,0,0)); BADGE[m]=im
@@ -123,9 +123,7 @@ for t in range(total):
                 for _ in range(10): parts.append([e[4],e[5],random.uniform(-2,2),random.uniform(-6,-2),(230,230,230),0,'steam'])
                 pops.append([e[4],e[5]-50,f'-{e[3]}',(200,200,200),0,40])
             if e[1]=='eat':
-                if e[6]>1:
-                    pops.append([e[4],e[5]-50,f'x{e[6]}!',TC[e[6]],0,72])
-                    bx_,by_,bw_,bh_=box(e[2],fr['big'][e[2]]); pops.append([min(max(CX[e[2]],140),W-140),min(max(by_+bh_*0.2,260),H-200),f'x{e[6]}',COL[e[2]],0,110])
+                if e[3]>=250: pops.append([e[4],e[5]-50,f'+{e[3]}',TC[e[6]],0,60 if e[3]<1000 else 80])
                 rings.append([e[4],e[5],0,COL[e[2]]])
             if e[1]=='feed':
                 bx_,by_,bw_,bh_=box(e[2],fr['big'][e[2]]); pops.append([min(max(CX[e[2]],90),W-90),min(max(by_+bh_*0.35,240),H-200),f'+{e[3]}',COL[e[2]],0,50 if e[3]<1000 else 70])

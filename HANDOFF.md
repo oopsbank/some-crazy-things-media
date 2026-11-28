@@ -17,7 +17,11 @@ New YouTube Shorts format (no channel yet): two sides race, physics decides, we 
 - Also ends when both sides have no runners left: the bigger one wins.
 - Seed 18: 38 s, Fire comes back with a 5000 runner and wins 6422 vs 6228.
 
-## v6 (seed 313, current) = v5 plus:
+## v7 (seed 53, current) = v6 but:
+- Head badges show +value (+50 +100 +150 +250 +1000 +5000) instead of xN; absorbed runners just add their value (no multiplying).
+- Seed 53: 42.2 s, FIRE wins 9550 vs 7805 (loser at 91%), 5 lead changes.
+
+## v6 (seed 313) = v5 plus:
 - Big ones anchored higher (BOT=1610) so Shorts UI doesn't cover them; skill bars sit below.
 - Skill bar per side: every runner that reaches its big one (eat or finish) charges 1; at 10 (SKILL_N) the big one fires a diagonal beam
   (FIRE BLAST / WATER JET) sweeping across the enemy half for BEAMDUR frames; enemy runners within BEAMW of it die ('zap').

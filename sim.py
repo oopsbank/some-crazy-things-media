@@ -75,8 +75,8 @@ def simulate(seed, record=False):
             if winner is None:
                 if hit(c.side,big[c.side],c.x,y):
                     c.alive=False
-                    # an xN runner multiplies its big one (x1 just adds its 50); the gain flows in gradually
-                    gain=big[c.side]*(c.mult-1) if c.mult>1 else c.v
+                    # a runner adds its +value; the gain flows in gradually
+                    gain=c.v
                     pend[c.side]+=gain; charge[c.side]+=1; ev.append((f,'eat',c.side,int(gain),c.x,y,c.mult)); split(c,c.x,y); continue
                 # enemy skill beam
                 b=beam[1-c.side]
