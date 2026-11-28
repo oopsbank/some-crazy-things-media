@@ -50,6 +50,12 @@ def tentacle(ld,x1,y1,x2,y2,phase,w0=24,w1=7,col=WH,al=255,suck=True):
     if suck:
         for k,(px,py,w) in enumerate(pts[1:-1]):
             if k%2==0: s=max(3,w*.35); ld.ellipse([px+nx*w*.3-s,py+ny*w*.3-s,px+nx*w*.3+s,py+ny*w*.3+s],fill=(255,210,235,al))
+def hpbar(ld,cx,cy,hp,col,t,rr=None):
+    rr=rr or R; w=150; hp=max(hp,0); y=cy+rr+14
+    if y+22>AY1-2: y=cy-rr-36
+    c=col if hp>=25 else ((255,60,60) if (t//4)%2 else (255,150,150))
+    ld.rounded_rectangle([cx-w/2-5,y-5,cx+w/2+5,y+23],radius=10,fill=(0,0,0,220),outline=(255,255,255,240),width=3)
+    if hp>0: ld.rounded_rectangle([cx-w/2,y,cx-w/2+max(10,w*hp/100),y+18],radius=7,fill=c+(255,))
 for t in range(total):
     ti=min(max(t-INTRO,0),N-1); i,fz,fk=TL[ti]; fr=F[i]; ending=t>=INTRO+N; live=INTRO<=t<INTRO+N and fz is None; frozen=INTRO<=t<INTRO+N and fz is not None
     im=Image.new('RGBA',(W,H),(0,0,0,255)); d=ImageDraw.Draw(im)
@@ -145,6 +151,7 @@ for t in range(total):
     def draw_a():
         ld.ellipse([ax-R,ay-R,ax+R,ay+R],fill=(120,40,110),outline=(255,255,255),width=5)
         e=emo('a',86); lay.alpha_composite(e,(int(ax-43),int(ay-43)))
+        hpbar(ld,ax,ay,0 if (ending and loser=='a') else ahp,OC,t)
     def draw_b():
         sc=1+0.7*math.sin(math.pi*jmp[0]) if jmp and not ending else 1
         cy=by-hb; rr=R*sc
@@ -164,6 +171,7 @@ for t in range(total):
                 dy_=(t*3+q*17)%40; ld.ellipse([bx-25+q*25-6,cy+R+dy_-6,bx-25+q*25+6,cy+R+dy_+8],fill=INK+(max(0,255-dy_*6),))
         ld.ellipse([bx-rr,cy-rr,bx+rr,cy+rr],fill=(140,45,30),outline=(255,255,255),width=5)
         e=emo('b',86*sc); lay.alpha_composite(e,(int(bx-e.width/2),int(cy-e.height/2)))
+        hpbar(ld,bx,cy,0 if (ending and loser=='b') else bhp,CC,t,rr)
     if ending:
         k=t-(INTRO+N)
         if k==0:

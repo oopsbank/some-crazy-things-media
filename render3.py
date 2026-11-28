@@ -31,6 +31,12 @@ for i,fr_ in enumerate(F):
 N=len(TL); total=INTRO+N+END; loser='b' if r['win']=='a' else 'a'
 shake=[0.0]; flash=[0,(255,255,255)]; fxp=[]
 def ult_caster(c,fr): return fr['a'][:2] if c=='wave' else fr['b'][:2]
+def hpbar(ld,cx,cy,hp,col,t,rr=None):
+    rr=rr or R; w=150; hp=max(hp,0); y=cy+rr+14
+    if y+22>AY1-2: y=cy-rr-36
+    c=col if hp>=25 else ((255,60,60) if (t//4)%2 else (255,150,150))
+    ld.rounded_rectangle([cx-w/2-5,y-5,cx+w/2+5,y+23],radius=10,fill=(0,0,0,220),outline=(255,255,255,240),width=3)
+    if hp>0: ld.rounded_rectangle([cx-w/2,y,cx-w/2+max(10,w*hp/100),y+18],radius=7,fill=c+(255,))
 for t in range(total):
     ti=min(max(t-INTRO,0),N-1); i,fz,fk=TL[ti]; fr=F[i]; ending=t>=INTRO+N; live=INTRO<=t<INTRO+N and fz is None; frozen=INTRO<=t<INTRO+N and fz is not None
     im=Image.new('RGBA',(W,H),(0,0,0,255)); d=ImageDraw.Draw(im)
@@ -135,6 +141,7 @@ for t in range(total):
         if fr['gas'] and not fr['shell'] and not ending: ld.ellipse([ax-R-8,ay-R-8,ax+R+8,ay+R+8],outline=GAS+(255,),width=8)
         ld.ellipse([ax-R,ay-R,ax+R,ay+R],fill=(30,130,100),outline=(255,255,255),width=5)
         lay.alpha_composite(EA,(int(ax-43),int(ay-43)))
+        hpbar(ld,ax,ay,0 if (ending and loser=='a') else ahp,TC,t)
         if fr['shell'] and not ending:
             ov=Image.new('RGBA',(W,H),(0,0,0,0)); od=ImageDraw.Draw(ov); SR_=R+20
             od.ellipse([ax-SR_,ay-SR_,ax+SR_,ay+SR_],fill=BR+(70,))
@@ -147,6 +154,7 @@ for t in range(total):
     def draw_b():
         ld.ellipse([bx-R,by-R,bx+R,by+R],fill=(45,45,60),outline=(255,255,255),width=5)
         lay.alpha_composite(EB,(int(bx-43),int(by-43)))
+        hpbar(ld,bx,by,0 if (ending and loser=='b') else bhp,SC,t)
     if ending:
         k=t-(INTRO+N)
         if k==0:
