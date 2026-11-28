@@ -17,6 +17,12 @@ New YouTube Shorts format (no channel yet): two sides race, physics decides, we 
 - Also ends when both sides have no runners left: the bigger one wins.
 - Seed 18: 38 s, Fire comes back with a 5000 runner and wins 6422 vs 6228.
 
+## Themes (same rules, different sides)
+- `python3 render.py <seed> out.mp4 [fire|sun]` (default fire). Seed search must call `sim.set_theme(name)` first: the shapes (and their pixel masks / aspect) differ.
+- Theme config lives in render.py (TH dict: names, colors, small emoji, skill names, splat and beam colors) and shapes.py (THEMES: big art + aspect).
+- sun = SUN vs MOON (vector sun with rays / purple moon with craters, AR=1.0; small runners reuse the vector art with eyes).
+  Seed 3067: 37.8 s, MOON wins 16641 vs 8226 (sun at 72%), 4 lead changes, SOLAR FLARE x1, MOON RAY x3.
+
 ## v7 (seed 53, current) = v6 but:
 - Head badges show +value (+50 +100 +150 +250 +1000 +5000) instead of xN; absorbed runners just add their value (no multiplying).
 - Seed 53: 42.2 s, FIRE wins 9550 vs 7805 (loser at 91%), 5 lead changes.

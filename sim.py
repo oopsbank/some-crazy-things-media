@@ -6,13 +6,14 @@ LANES={1:(1,6.5),2:(-1,8.0),6:(-1,7.0),7:(1,8.5)}
 CARW=150
 MULTS=[(1,150),(2,130),(3,115),(5,95),(20,62),(100,50)]   # head multiplier weights
 SPLIT_ROW=4
-CX=[270,810]; BOT=1610; TOPWIN=190; AR=shapes.AR
+CX=[270,810]; BOT=1610; TOPWIN=190
+def set_theme(name): shapes.set_theme(name)
 SKILL_N=10; BEAMDUR=36; BEAMW=48
 START_N=5; BASE=50; SPAWN=2; DECAY=0.9975; GAP=(1300,2000); MAXN=40
 K=5.5; FEED=0.05
 def rad(v): return K*math.sqrt(max(v,0))+10
 def box(s,v):
-    rr=rad(v); w=2*rr; h=w*AR; return CX[s]-rr,BOT-h,w,h
+    rr=rad(v); w=2*rr; h=w*shapes.AR; return CX[s]-rr,BOT-h,w,h
 def hit(s,v,x,y):
     x0,y0,w,h=box(s,v); M=shapes.mask(s); mh,mw=M.shape
     for dx,dy in ((0,0),(-22,0),(22,0),(0,-26),(0,26)):

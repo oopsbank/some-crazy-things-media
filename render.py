@@ -3,7 +3,14 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
 import sim, shapes
 from sim import ROWS, LANES, CARW, CX, BOT, TOPWIN, rad, box, SPLIT_ROW, SKILL_N
-SEED=int(sys.argv[1]); OUT=sys.argv[2]
+SEED=int(sys.argv[1]); OUT=sys.argv[2]; THEME=sys.argv[3] if len(sys.argv)>3 else 'fire'
+TH={'fire':dict(name=['FIRE','WATER'],col=[(255,140,40),(70,170,255)],emo=['🔥','💧'],skill=['FIRE BLAST','WATER JET'],
+                splat=[((120,120,120),'puff'),((70,170,255),'drop')],
+                beam=[((255,90,20),(255,170,40),(255,245,200)),((40,120,255),(90,190,255),(225,245,255))]),
+    'sun':dict(name=['SUN','MOON'],col=[(255,190,30),(170,140,255)],emo=['☀️','🌕'],skill=['SOLAR FLARE','MOON RAY'],
+                splat=[((255,210,60),'drop'),((190,170,255),'drop')],
+                beam=[((255,140,0),(255,210,60),(255,255,220)),((110,70,220),(180,150,255),(245,240,255))])}[THEME]
+sim.set_theme(THEME)
 r=sim.simulate(SEED, record=True); F=r['frames']; EV={}
 for e in r['ev']: EV.setdefault(e[0],[]).append(e)
 W,H=1080,1920
@@ -22,14 +29,21 @@ def eyes(im):
     for ex in (w*0.36,w*0.64):
         d.ellipse([ex-w*.11,cy-h*.11,ex+w*.11,cy+h*.11],fill='white'); d.ellipse([ex-w*.05,cy-h*.02,ex+w*.05,cy+h*.09],fill='black')
     return im
-BIG0=[emoji('🔥'),emoji('💧')]
-SMALL=[eyes(BIG0[0]).resize((54,58),Image.LANCZOS),eyes(BIG0[1]).resize((50,58),Image.LANCZOS)]
+BIG0=[emoji(TH['emo'][0]),emoji(TH['emo'][1])]
+SMALL=[eyes(b).resize((int(58*b.size[0]/b.size[1]),58),Image.LANCZOS) for b in BIG0]
+if THEME=='sun':   # small runners use the same vector art as the big ones
+    def eyes2(im):
+        im=im.copy(); d=ImageDraw.Draw(im); w,h=im.size; cy=h*0.52
+        for ex in (w*0.39,w*0.61):
+            d.ellipse([ex-w*.075,cy-h*.085,ex+w*.075,cy+h*.085],fill='white'); d.ellipse([ex-w*.035,cy-h*.01,ex+w*.035,cy+h*.07],fill='black')
+        return im
+    SMALL=[eyes2(shapes.sprite(s,240)).resize((64,64),Image.LANCZOS) for s in (0,1)]
 CARS=[emoji(c) for c in '🚗🚕🚙🚌🚓']
 def carimg(k,d):
     im=CARS[k%len(CARS)]; im=im.resize((CARW,int(CARW*im.size[1]/im.size[0])),Image.LANCZOS)
     return ImageOps.mirror(im) if d>0 else im
 CI={(k,d):carimg(k,d) for k in range(5) for d in (-1,1)}
-OR=(255,140,40); BL=(70,170,255); NAME=['FIRE','WATER']; COL=[OR,BL]
+OR,BL=TH['col']; NAME=TH['name']; COL=[OR,BL]
 TC={1:(110,110,125),2:(50,130,230),3:(40,175,110),5:(160,80,230),20:(235,60,60),100:(255,190,0)}
 INTRO=45; END=80
 
@@ -81,7 +95,7 @@ for x in range(0,W,60): d.line([x,990,x,H],fill=(32,46,58),width=1)
 for y in range(990,H,60): d.line([0,y,W,y],fill=(32,46,58),width=1)
 d.rectangle([0,986,W,994],fill=(10,10,14))
 d.rectangle([0,BOT,W,H],fill=(12,14,20)); d.rectangle([0,BOT,W,BOT+6],fill=(70,80,95))
-f1=font(66); P=[('FIRE',OR),(' vs ',(230,230,230)),('WATER',BL)]
+f1=font(66); P=[(NAME[0],OR),(' vs ',(230,230,230)),(NAME[1],BL)]
 tw=sum(d.textlength(p,font=f1) for p,_ in P); x=(W-tw)/2
 for p,c in P: d.text((x,28),p,font=f1,fill=c,stroke_width=3,stroke_fill=(0,0,0)); x+=d.textlength(p,font=f1)
 
@@ -111,12 +125,12 @@ for t in range(total):
                 s,x0,y0,v=e[2],e[3],e[4],e[5]
                 for _ in range(16):
                     a=random.uniform(0,6.28); vv=random.uniform(2,9)
-                    parts.append([x0,y0,math.cos(a)*vv,math.sin(a)*vv-(3 if s==0 else 0),(120,120,120) if s==0 else BL,0,'puff' if s==0 else 'drop'])
+                    parts.append([x0,y0,math.cos(a)*vv,math.sin(a)*vv-(3 if TH['splat'][s][1]=='puff' else 0),TH['splat'][s][0],0,TH['splat'][s][1]])
             if e[1]=='spawn':
                 pops.append([e[4],e[5]-60,'+2',COL[e[2]],0,52])
                 rings.append([e[4],e[5],0,COL[e[2]]])
             if e[1]=='skill':
-                pops.append([CX[e[2]],max(box(e[2],fr['big'][e[2]])[1]-20,300),['FIRE BLAST!','WATER JET!'][e[2]],COL[e[2]],-10,78])
+                pops.append([CX[e[2]],max(box(e[2],fr['big'][e[2]])[1]-20,300),TH['skill'][e[2]]+'!',COL[e[2]],-10,78])
             if e[1]=='zap':
                 for _ in range(14): parts.append([e[4],e[5],random.uniform(-4,4),random.uniform(-7,-1),(235,235,235) if e[2]==1 else (110,110,110),0,'steam'])
             if e[1]=='fizzle':
@@ -177,7 +191,7 @@ for t in range(total):
         for s,b in enumerate(fr['beam']):
             if not b: continue
             ox,oy,tx,ty=b[1:5]; fl=1+0.15*math.sin(t*1.7)
-            outer=(255,90,20) if s==0 else (40,120,255); mid=(255,170,40) if s==0 else (90,190,255); core=(255,245,200) if s==0 else (225,245,255)
+            outer,mid,core=TH['beam'][s]
             od.line([ox,oy,tx,ty],fill=outer+(110,),width=int(110*fl)); od.line([ox,oy,tx,ty],fill=mid+(200,),width=int(64*fl)); od.line([ox,oy,tx,ty],fill=core+(255,),width=int(24*fl))
             od.ellipse([ox-50,oy-50,ox+50,oy+50],fill=core+(230,))
             for _ in range(5):
@@ -191,7 +205,7 @@ for t in range(total):
         for j in range(SKILL_N):
             on=j<min(ch_,SKILL_N) or active
             d.rounded_rectangle([x0_+12+j*sw_+2,y0_+12,x0_+12+(j+1)*sw_-2,y1_-12],radius=6,fill=(COL[s] if not active else (255,255,255)) if on else (40,44,52))
-        lab=['FIRE BLAST','WATER JET'][s]; ctext(d,(x0_+x1_)/2,y1_+10,f'{lab} {min(ch_,SKILL_N)}/{SKILL_N}' if not active else lab+'!',font(34),COL[s],3)
+        lab=TH['skill'][s]; ctext(d,(x0_+x1_)/2,y1_+10,f'{lab} {min(ch_,SKILL_N)}/{SKILL_N}' if not active else lab+'!',font(34),COL[s],3)
     if not ending:
         for x in range(0,W,40): d.line([x,TOPWIN,x+22,TOPWIN],fill=(255,255,255),width=4)
     b0,b1=fr['big']; frac=b0/(b0+b1) if b0+b1>0 else .5
